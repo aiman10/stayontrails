@@ -187,6 +187,7 @@ $wsUrl = $wsBase . $room;
       <ul class="menu">
         <li><a href="index.php">Home</a></li>
         <?php if ($isLoggedIn): ?>
+          <li><a href="jetsonFaceDetection.php">Face Detection</a></li>
           <li>
             <form class="inline" method="get">
               <button type="submit" name="logout" value="1">Logout</button>

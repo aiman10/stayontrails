@@ -198,7 +198,8 @@
       <nav aria-label="Main menu">
         <ul class="menu">
           <li><a href="index.php" aria-current="page">Home</a></li>
-          <li><a class="cta" href="stayontrails.php">START</a></li>
+          <li><a href="jetsonStayontrails.php">AAL Companion</a></li>
+          <li><a class="cta" href="stayontrails.php">Try it out</a></li>
         </ul>
       </nav>
     </div>
