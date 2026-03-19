@@ -198,7 +198,7 @@
       <nav aria-label="Main menu">
         <ul class="menu">
           <li><a href="index.php" aria-current="page">Home</a></li>
-          <li><a class="cta" href="stayontrails.php">Try it</a></li>
+          <li><a class="cta" href="stayontrails.php">START</a></li>
         </ul>
       </nav>
     </div>
@@ -224,7 +224,7 @@
         <h2>Test on your mobile phone</h2>
         <ol>
           <li>Open this test video: <a href="https://youtu.be/gdL35MJxmQA?si=4eEKiPXg0HmggHmf">YouTube path video</a>.</li>
-          <li>Tap <strong>Try it</strong> in the menu and press <strong>Start</strong>.</li>
+          <li>Tap <strong>START</strong> in the menu and press <strong>Start</strong>.</li>
           <li>Point your phone camera to the video screen.</li>
           <li>The app will provide path guidance using audio directions.</li>
         </ol>
@@ -243,7 +243,7 @@
       </article>
       <article class="card">
         <h2>Simple menu </h2>
-        <p>Use the Try it item in the top menu to jump straight into the live experience.</p>
+        <p>Use the START item in the top menu to jump straight into the live experience.</p>
       </article>
     </section>
   </main>
