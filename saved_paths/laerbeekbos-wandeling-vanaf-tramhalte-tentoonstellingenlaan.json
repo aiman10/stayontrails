@@ -1,0 +1,606 @@
+{
+    "name": "Laerbeekbos wandeling vanaf tramhalte Tentoonstellingenlaan.",
+    "slug": "laerbeekbos-wandeling-vanaf-tramhalte-tentoonstellingenlaan",
+    "language": "nl-BE",
+    "headingFeedbackFps": 3,
+    "routeLengthMeters": 3077.6,
+    "updatedAt": "2026-03-31T17:32:06+00:00",
+    "pointCount": 85,
+    "points": [
+        {
+            "id": "point-1774973420558-977a71",
+            "lat": 50.880049,
+            "lng": 4.315914,
+            "lon": 4.315914,
+            "instruction": "Stap uit aan tramhalte Tentoonstelling."
+        },
+        {
+            "id": "point-1774973477940-cd6f81",
+            "lat": 50.880126,
+            "lng": 4.315834,
+            "lon": 4.315834,
+            "instruction": "Opgelet! Je moet nu de straat oversteken. Er is een knop om aan te vragen."
+        },
+        {
+            "id": "point-1774973523610-01fcf9",
+            "lat": 50.880117,
+            "lng": 4.315705,
+            "lon": 4.315705,
+            "instruction": "Eens overgestoken, ga je naar rechts op het voetpad.  Probeer links op het voetpad aan te houden."
+        },
+        {
+            "id": "point-1774973661064-895bd7",
+            "lat": 50.880635,
+            "lng": 4.315681,
+            "lon": 4.315681,
+            "instruction": "Ga naar links en verlaat het gewone voetpad van de tentoonstellingenlaan.  Je komt dan op het wandelpad terecht."
+        },
+        {
+            "id": "point-1774973728828-e534b5",
+            "lat": 50.88064,
+            "lng": 4.315531,
+            "lon": 4.315531,
+            "instruction": "Je bent nu op het wandelpad, ga naar rechts."
+        },
+        {
+            "id": "point-1774973758753-1b4f58",
+            "lat": 50.880984,
+            "lng": 4.315577,
+            "lon": 4.315577,
+            "instruction": "Blijf het wandelpad volgen."
+        },
+        {
+            "id": "point-1774973776004-2f035f",
+            "lat": 50.881591,
+            "lng": 4.315805,
+            "lon": 4.315805,
+            "instruction": "Het wandelpad draait mee naar links."
+        },
+        {
+            "id": "point-1774973797198-0deee6",
+            "lat": 50.881801,
+            "lng": 4.315492,
+            "lon": 4.315492,
+            "instruction": "Je komt nu op een splitsing.  Ga naar links en vervolg het wandelpad."
+        },
+        {
+            "id": "point-1774973839725-e79ac4",
+            "lat": 50.881757,
+            "lng": 4.315165,
+            "lon": 4.315165,
+            "instruction": "Sla hier rechts af.  Je komt aan een bruggetje over de molenbeek. Steek deze over."
+        },
+        {
+            "id": "point-1774973954290-76911f",
+            "lat": 50.881847,
+            "lng": 4.315132,
+            "lon": 4.315132,
+            "instruction": "Vervolg nu het wegje tot aan de volgende T splitsing."
+        },
+        {
+            "id": "point-1774974008425-835197",
+            "lat": 50.8825,
+            "lng": 4.315072,
+            "lon": 4.315072,
+            "instruction": "Neem op de T splitsing naar links."
+        },
+        {
+            "id": "point-1774974062155-e6ff87",
+            "lat": 50.882483,
+            "lng": 4.314266,
+            "lon": 4.314266,
+            "instruction": "Blijf het pad volgen."
+        },
+        {
+            "id": "point-1774974083725-b5761b",
+            "lat": 50.882181,
+            "lng": 4.313103,
+            "lon": 4.313103,
+            "instruction": "Loop verder"
+        },
+        {
+            "id": "point-1774974093775-ded19a",
+            "lat": 50.881995,
+            "lng": 4.312175,
+            "lon": 4.312175,
+            "instruction": "Goed zo, je bent nog op het pad."
+        },
+        {
+            "id": "point-1774974113357-9b7d3f",
+            "lat": 50.881853,
+            "lng": 4.310228,
+            "lon": 4.310228,
+            "instruction": "Je komt nu aan een T splitsing, maar loop gewoon rechtdoor."
+        },
+        {
+            "id": "point-1774974146703-628a1f",
+            "lat": 50.881847,
+            "lng": 4.310111,
+            "lon": 4.310111,
+            "instruction": "Bocht naar rechts"
+        },
+        {
+            "id": "point-1774974164868-e2fd3b",
+            "lat": 50.882103,
+            "lng": 4.309798,
+            "lon": 4.309798,
+            "instruction": "Loop verder"
+        },
+        {
+            "id": "point-1774974187639-292abe",
+            "lat": 50.882314,
+            "lng": 4.309515,
+            "lon": 4.309515,
+            "instruction": "Op deze splitsing ga je naar links."
+        },
+        {
+            "id": "point-1774974218149-c09120",
+            "lat": 50.882204,
+            "lng": 4.309187,
+            "lon": 4.309187,
+            "instruction": "Vervolg de weg."
+        },
+        {
+            "id": "point-1774974231739-2b2f6d",
+            "lat": 50.882095,
+            "lng": 4.308877,
+            "lon": 4.308877,
+            "instruction": "De weg draait naar rechts.  Rechts van jou is een kinderboerderij met een wei waar meestal geitjes en schapen staan."
+        },
+        {
+            "id": "point-1774974266195-2044df",
+            "lat": 50.882173,
+            "lng": 4.307882,
+            "lon": 4.307882,
+            "instruction": "Je bent op een splitsing. Hou rechts van de weg en volg deze rechtdoor"
+        },
+        {
+            "id": "point-1774974412733-a4809f",
+            "lat": 50.88242,
+            "lng": 4.307324,
+            "lon": 4.307324,
+            "instruction": "Ga verder."
+        },
+        {
+            "id": "point-1774974468188-d8c5a4",
+            "lat": 50.8826,
+            "lng": 4.306894,
+            "lon": 4.306894,
+            "instruction": "Steek de kasseiweg over en vervolg het pad. Opgelet er kunnen fietsers en soms een auto passeren."
+        },
+        {
+            "id": "point-1774974523013-38e8f0",
+            "lat": 50.882625,
+            "lng": 4.306818,
+            "lon": 4.306818,
+            "instruction": "Vervolg het pad."
+        },
+        {
+            "id": "point-1774974540533-9c5962",
+            "lat": 50.882724,
+            "lng": 4.305873,
+            "lon": 4.305873,
+            "instruction": "Loop verder. Je bent op het pad."
+        },
+        {
+            "id": "point-1774974588535-1201f4",
+            "lat": 50.882812,
+            "lng": 4.305176,
+            "lon": 4.305176,
+            "instruction": "Er staat links van jou een bankje als je wil rusten, stap anders door maar hou links aan op de volgende splitsing."
+        },
+        {
+            "id": "point-1774974664744-4606fa",
+            "lat": 50.882852,
+            "lng": 4.304656,
+            "lon": 4.304656,
+            "instruction": "ga door."
+        },
+        {
+            "id": "point-1774974678828-f6d74b",
+            "lat": 50.882874,
+            "lng": 4.304361,
+            "lon": 4.304361,
+            "instruction": "Loop rechtdoor op deze splitsing"
+        },
+        {
+            "id": "point-1774974708371-97a1c2",
+            "lat": 50.882908,
+            "lng": 4.303987,
+            "lon": 4.303987,
+            "instruction": "De weg draait een beetje naar rechts."
+        },
+        {
+            "id": "point-1774974729515-e1c68e",
+            "lat": 50.883079,
+            "lng": 4.303228,
+            "lon": 4.303228,
+            "instruction": "Opgelet, je komt aan een brug over de coralbeek.  Ga rechtdoor over het brugje."
+        },
+        {
+            "id": "point-1774974803586-cddb0e",
+            "lat": 50.88316,
+            "lng": 4.302772,
+            "lon": 4.302772,
+            "instruction": "JLoop verder op het pad."
+        },
+        {
+            "id": "point-1774974819853-592098",
+            "lat": 50.883356,
+            "lng": 4.302123,
+            "lon": 4.302123,
+            "instruction": "Ga door."
+        },
+        {
+            "id": "point-1774974835169-1d5754",
+            "lat": 50.883567,
+            "lng": 4.301684,
+            "lon": 4.301684,
+            "instruction": "Je komt op een groot pad.  Ga rechts dit pad op."
+        },
+        {
+            "id": "point-1774974936097-109cf1",
+            "lat": 50.883683,
+            "lng": 4.302142,
+            "lon": 4.302142,
+            "instruction": "Blijf op het grote pad. Het zal een grote bocht naar links maken."
+        },
+        {
+            "id": "point-1774974973905-fe2fb5",
+            "lat": 50.883888,
+            "lng": 4.302298,
+            "lon": 4.302298,
+            "instruction": "ga door."
+        },
+        {
+            "id": "point-1774974985552-0ba643",
+            "lat": 50.884169,
+            "lng": 4.302279,
+            "lon": 4.302279,
+            "instruction": "Op deze T splitsing ga je naar links op hetzelfde grote pad."
+        },
+        {
+            "id": "point-1774975029609-1d78dc",
+            "lat": 50.884191,
+            "lng": 4.302107,
+            "lon": 4.302107,
+            "instruction": "flauwe bocht naar rechts."
+        },
+        {
+            "id": "point-1774975046731-d5c508",
+            "lat": 50.884497,
+            "lng": 4.301416,
+            "lon": 4.301416,
+            "instruction": "Flauwe bocht naar links."
+        },
+        {
+            "id": "point-1774975082244-68d991",
+            "lat": 50.88448,
+            "lng": 4.301083,
+            "lon": 4.301083,
+            "instruction": "Je bent nu aan Chalet van Laerbeek, hier kan je iets eten of iets drinken.  Als je verder wil stappen ga gewoon door, je bent op de terugweg."
+        },
+        {
+            "id": "point-1774975151381-db6233",
+            "lat": 50.884462,
+            "lng": 4.300782,
+            "lon": 4.300782,
+            "instruction": "Ga licht naar links."
+        },
+        {
+            "id": "point-1774975200311-f575ef",
+            "lat": 50.884354,
+            "lng": 4.300644,
+            "lon": 4.300644,
+            "instruction": "Je komt aan een bankje langs je rechter kant. Je komt er nog enkele andere tegen."
+        },
+        {
+            "id": "point-1774975225617-6a571b",
+            "lat": 50.884113,
+            "lng": 4.300476,
+            "lon": 4.300476,
+            "instruction": "Ga licht naar links."
+        },
+        {
+            "id": "point-1774975253682-762910",
+            "lat": 50.883962,
+            "lng": 4.300504,
+            "lon": 4.300504,
+            "instruction": "Flauwe bocht naar links"
+        },
+        {
+            "id": "point-1774975350058-9eaa69",
+            "lat": 50.883863,
+            "lng": 4.300641,
+            "lon": 4.300641,
+            "instruction": "Vervolg het brede pad."
+        },
+        {
+            "id": "point-1774975599932-8bbbab",
+            "lat": 50.883715,
+            "lng": 4.300875,
+            "lon": 4.300875,
+            "instruction": "Opnieuw een bankje langs je rechter kant. Vervolg de weg."
+        },
+        {
+            "id": "point-1774975652671-3c2062",
+            "lat": 50.883568,
+            "lng": 4.301187,
+            "lon": 4.301187,
+            "instruction": "Flauwe bocht naar links."
+        },
+        {
+            "id": "point-1774975676253-08de96",
+            "lat": 50.883563,
+            "lng": 4.301675,
+            "lon": 4.301675,
+            "instruction": "Je bent nu op een punt waar je eerder was.  Draai hier weg van het brede pad en ga het bospad op."
+        },
+        {
+            "id": "point-1774975732699-df0aa9",
+            "lat": 50.883432,
+            "lng": 4.301924,
+            "lon": 4.301924,
+            "instruction": "Ga verder"
+        },
+        {
+            "id": "point-1774975740349-fe6ec0",
+            "lat": 50.883258,
+            "lng": 4.302452,
+            "lon": 4.302452,
+            "instruction": "Loop door."
+        },
+        {
+            "id": "point-1774975749784-f2eee4",
+            "lat": 50.883089,
+            "lng": 4.303178,
+            "lon": 4.303178,
+            "instruction": "Je komt aan hetzelfde brugje van daarnet.  Steek het opnieuw over, maar nu ga je na het brugje direct naar  rechts naar een ander pad."
+        },
+        {
+            "id": "point-1774975835308-6f864b",
+            "lat": 50.882969,
+            "lng": 4.303217,
+            "lon": 4.303217,
+            "instruction": "Je zit goed.  Vervolg het pad.  Let wel op je loopt langs de coralbeek, hou een beetje links op het pad."
+        },
+        {
+            "id": "point-1774975897491-2b66ee",
+            "lat": 50.882503,
+            "lng": 4.303155,
+            "lon": 4.303155,
+            "instruction": "ga verder.  Nog steeds naast de coralbeek."
+        },
+        {
+            "id": "point-1774975920682-fb67f0",
+            "lat": 50.882317,
+            "lng": 4.303144,
+            "lon": 4.303144,
+            "instruction": "Nu kom je op een groter pad, een kasseiweg.  Ga naar links.  Loop o deze kasseiweg langs de rechter kant, daar kan je een betonnen rand volgen, naast de kasseien."
+        },
+        {
+            "id": "point-1774976013422-9f4e7c",
+            "lat": 50.882043,
+            "lng": 4.303832,
+            "lon": 4.303832,
+            "instruction": "Blijf de kasseiweg volgen."
+        },
+        {
+            "id": "point-1774976033409-56af74",
+            "lat": 50.881894,
+            "lng": 4.304299,
+            "lon": 4.304299,
+            "instruction": "flauwe bocht naar links, volg verder."
+        },
+        {
+            "id": "point-1774976071690-cb6d81",
+            "lat": 50.881899,
+            "lng": 4.304548,
+            "lon": 4.304548,
+            "instruction": "Hier verlaat je de kasseiweg en ga je een smaller pad op naar rechts."
+        },
+        {
+            "id": "point-1774976102979-a6efd1",
+            "lat": 50.881784,
+            "lng": 4.304602,
+            "lon": 4.304602,
+            "instruction": "Volg het pad."
+        },
+        {
+            "id": "point-1774976122097-a44f74",
+            "lat": 50.881665,
+            "lng": 4.304685,
+            "lon": 4.304685,
+            "instruction": "Je komt op een splitsing, vervolg de weg naar links."
+        },
+        {
+            "id": "point-1774976144913-252bd4",
+            "lat": 50.881618,
+            "lng": 4.304952,
+            "lon": 4.304952,
+            "instruction": "Ga verder. Rechts van jou loopt het treinspoor."
+        },
+        {
+            "id": "point-1774976158405-73c9e4",
+            "lat": 50.881585,
+            "lng": 4.306193,
+            "lon": 4.306193,
+            "instruction": "Blijf de weg volgen."
+        },
+        {
+            "id": "point-1774976172730-1742c4",
+            "lat": 50.88159,
+            "lng": 4.306626,
+            "lon": 4.306626,
+            "instruction": "Vervolg de weg, deze draait naar rechts."
+        },
+        {
+            "id": "point-1774976188045-ada068",
+            "lat": 50.88142,
+            "lng": 4.306991,
+            "lon": 4.306991,
+            "instruction": "Ga door"
+        },
+        {
+            "id": "point-1774976197511-811f53",
+            "lat": 50.881268,
+            "lng": 4.307428,
+            "lon": 4.307428,
+            "instruction": "Ga verder."
+        },
+        {
+            "id": "point-1774976210756-90ef2a",
+            "lat": 50.881014,
+            "lng": 4.308725,
+            "lon": 4.308725,
+            "instruction": "Ga verder, je loopt over een brede brug over de Molenbeek. Rechts"
+        },
+        {
+            "id": "point-1774976281609-78b372",
+            "lat": 50.880899,
+            "lng": 4.309311,
+            "lon": 4.309311,
+            "instruction": "ga verder."
+        },
+        {
+            "id": "point-1774976295777-bf93e6",
+            "lat": 50.880886,
+            "lng": 4.309572,
+            "lon": 4.309572,
+            "instruction": "flauwe bocht naar links, vervolg de weg."
+        },
+        {
+            "id": "point-1774976324479-6f2cb7",
+            "lat": 50.880985,
+            "lng": 4.310228,
+            "lon": 4.310228,
+            "instruction": "Vervolg de weg."
+        },
+        {
+            "id": "point-1774976334320-093f36",
+            "lat": 50.881019,
+            "lng": 4.310601,
+            "lon": 4.310601,
+            "instruction": "Ga rechtdoor op deze splitsing."
+        },
+        {
+            "id": "point-1774976350828-e5a675",
+            "lat": 50.881092,
+            "lng": 4.311154,
+            "lon": 4.311154,
+            "instruction": "Zachte bocht naar rechts."
+        },
+        {
+            "id": "point-1774976369339-5332f1",
+            "lat": 50.881073,
+            "lng": 4.311543,
+            "lon": 4.311543,
+            "instruction": "Zachte bocht naar links."
+        },
+        {
+            "id": "point-1774976387444-ec878f",
+            "lat": 50.881271,
+            "lng": 4.312663,
+            "lon": 4.312663,
+            "instruction": "Vervolg de weg."
+        },
+        {
+            "id": "point-1774976399489-d91150",
+            "lat": 50.881386,
+            "lng": 4.313141,
+            "lon": 4.313141,
+            "instruction": "Vervolg de weg.  Hier is een uitkijkpost over het Moeras van Jette."
+        },
+        {
+            "id": "point-1774976435902-f2cc24",
+            "lat": 50.881539,
+            "lng": 4.313997,
+            "lon": 4.313997,
+            "instruction": "Ga verder."
+        },
+        {
+            "id": "point-1774976444272-98b958",
+            "lat": 50.8817,
+            "lng": 4.314943,
+            "lon": 4.314943,
+            "instruction": "Ga nog iets verder."
+        },
+        {
+            "id": "point-1774976464515-87fe7f",
+            "lat": 50.881751,
+            "lng": 4.315132,
+            "lon": 4.315132,
+            "instruction": "Hier ben je daarstraks ook geweest aan het brugje over de molenbeek.  Echter nu ga je gewoon rechtdoor."
+        },
+        {
+            "id": "point-1774976506268-fc0593",
+            "lat": 50.881786,
+            "lng": 4.315357,
+            "lon": 4.315357,
+            "instruction": "Ga nog enkele meters verder."
+        },
+        {
+            "id": "point-1774976544865-8c5053",
+            "lat": 50.881799,
+            "lng": 4.315486,
+            "lon": 4.315486,
+            "instruction": "Op deze splitsing neem je naar rechts. Je bent bijna terug op de tentoonstellingenlaan."
+        },
+        {
+            "id": "point-1774976586743-7085c3",
+            "lat": 50.881721,
+            "lng": 4.315697,
+            "lon": 4.315697,
+            "instruction": "Volg het pad naar rechts."
+        },
+        {
+            "id": "point-1774976608382-fedb6f",
+            "lat": 50.881481,
+            "lng": 4.315782,
+            "lon": 4.315782,
+            "instruction": "Vervolg het pad."
+        },
+        {
+            "id": "point-1774976624882-2be126",
+            "lat": 50.880875,
+            "lng": 4.315552,
+            "lon": 4.315552,
+            "instruction": "Nog even verder rechtdoor, dan zal je het bospad verlaten."
+        },
+        {
+            "id": "point-1774976659232-5e7b3e",
+            "lat": 50.880641,
+            "lng": 4.315532,
+            "lon": 4.315532,
+            "instruction": "Hier ga je naar links  zodat je weer op de tentoonstellingenlaan uitkomt."
+        },
+        {
+            "id": "point-1774976702539-5df6fd",
+            "lat": 50.880633,
+            "lng": 4.315682,
+            "lon": 4.315682,
+            "instruction": "Neem, rechts en vervolg het voetpad naast de tentoonstellingenlaan."
+        },
+        {
+            "id": "point-1774976750877-3a2f7d",
+            "lat": 50.880118,
+            "lng": 4.315706,
+            "lon": 4.315706,
+            "instruction": "Je bent aan de tramhalte.  Opgelet want hier moet je links de baan oversteken  op de tentoonstellingenlaan."
+        },
+        {
+            "id": "point-1774976854124-54a19b",
+            "lat": 50.880126,
+            "lng": 4.315835,
+            "lon": 4.315835,
+            "instruction": "Goed, je bent nu aan de tramhalte.  Een beetje verder langs rechts heb je je startpunt."
+        },
+        {
+            "id": "point-1774976907083-68bb3c",
+            "lat": 50.880069,
+            "lng": 4.315896,
+            "lon": 4.315896,
+            "instruction": "Proficiat! Je hebt je bestemming bereikt."
+        }
+    ]
+}

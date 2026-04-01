@@ -1,0 +1,88 @@
+{
+    "name": "Wandeling rond de block thuis.",
+    "slug": "wandeling-rond-de-block-thuis",
+    "language": "nl-BE",
+    "headingFeedbackFps": 5,
+    "routeLengthMeters": 459.5,
+    "updatedAt": "2026-03-31T17:18:11+00:00",
+    "pointCount": 11,
+    "points": [
+        {
+            "id": "point-1774959954989-566219",
+            "lat": 50.888162,
+            "lng": 4.278923,
+            "lon": 4.278923,
+            "instruction": "Je start van de wandeling. Stap bergop.  Er is enkel een voetpad langs je linker kant."
+        },
+        {
+            "id": "point-1774960102846-61e609",
+            "lat": 50.888652,
+            "lng": 4.278223,
+            "lon": 4.278223,
+            "instruction": "Volg het voetpad gewoon verder voor 50 meter."
+        },
+        {
+            "id": "point-1774960166416-894431",
+            "lat": 50.889124,
+            "lng": 4.277882,
+            "lon": 4.277882,
+            "instruction": "Hier steek je de straat over naar rechts.  Blijf op het voetpad langs de rechterkant."
+        },
+        {
+            "id": "point-1774960224594-9f72d6",
+            "lat": 50.889368,
+            "lng": 4.278653,
+            "lon": 4.278653,
+            "instruction": "Sla binnen enkele passen rechts af.  Blijf op het voetpad. Je bent dan in de Wilgendaal."
+        },
+        {
+            "id": "point-1774960320101-ab4521",
+            "lat": 50.889265,
+            "lng": 4.27877,
+            "lon": 4.27877,
+            "instruction": "Volg de Wilgendaal verder naar beneden, blijf op het voetpad."
+        },
+        {
+            "id": "point-1774960359762-595734",
+            "lat": 50.888983,
+            "lng": 4.279069,
+            "lon": 4.279069,
+            "instruction": "Goed bezig.  blijf op het voetpad."
+        },
+        {
+            "id": "point-1774960391344-43a1aa",
+            "lat": 50.888234,
+            "lng": 4.279939,
+            "lon": 4.279939,
+            "instruction": "Je bent nog op het juiste pad."
+        },
+        {
+            "id": "point-1774960427959-499829",
+            "lat": 50.887908,
+            "lng": 4.280081,
+            "lon": 4.280081,
+            "instruction": "Hier zal je het voetpad van de Wilgendaal verlaten en een smallere voetweg oplopen.  Neem hier dus rechts."
+        },
+        {
+            "id": "point-1774960508061-55f20f",
+            "lat": 50.887914,
+            "lng": 4.279633,
+            "lon": 4.279633,
+            "instruction": "Een bocht naar rechts"
+        },
+        {
+            "id": "point-1774960525897-527655",
+            "lat": 50.888105,
+            "lng": 4.279375,
+            "lon": 4.279375,
+            "instruction": "Een bocht naar links."
+        },
+        {
+            "id": "point-1774960567327-f18bbf",
+            "lat": 50.888152,
+            "lng": 4.279159,
+            "lon": 4.279159,
+            "instruction": "Je bent weer thuis."
+        }
+    ]
+}

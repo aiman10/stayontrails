@@ -48,7 +48,9 @@ $wsUrl = 'wss://signaling.ehb.be/ws/pathnavigation';
     <nav aria-label="Main menu">
       <ul class="menu">
         <li><a href="index.php">Home</a></li>
+        
         <li><a class="cta" href="jetsonStayontrails.php" aria-current="page">AAL Companion login</a></li>
+
       </ul>
     </nav>
   </div>

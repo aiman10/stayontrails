@@ -1,0 +1,606 @@
+{
+  "name": "Laerbeekbos walk starting from tram stop Tentoonstellingenlaan.",
+  "slug": "laerbeekbos-walk-from-tram-stop-tentoonstellingenlaan",
+  "language": "en-GB",
+  "headingFeedbackFps": 3,
+  "routeLengthMeters": 3077.6,
+  "updatedAt": "2026-03-31T17:32:06+00:00",
+  "pointCount": 85,
+  "points": [
+    {
+      "id": "point-1774973420558-977a71",
+      "lat": 50.880049,
+      "lng": 4.315914,
+      "lon": 4.315914,
+      "instruction": "Get off at tram stop Tentoonstelling."
+    },
+    {
+      "id": "point-1774973477940-cd6f81",
+      "lat": 50.880126,
+      "lng": 4.315834,
+      "lon": 4.315834,
+      "instruction": "Attention! You now need to cross the street. There is a button to request crossing."
+    },
+    {
+      "id": "point-1774973523610-01fcf9",
+      "lat": 50.880117,
+      "lng": 4.315705,
+      "lon": 4.315705,
+      "instruction": "Once crossed, go right on the sidewalk. Try to stay on the left side of the sidewalk."
+    },
+    {
+      "id": "point-1774973661064-895bd7",
+      "lat": 50.880635,
+      "lng": 4.315681,
+      "lon": 4.315681,
+      "instruction": "Go left and leave the regular sidewalk of Tentoonstellingenlaan. You will reach the walking path."
+    },
+    {
+      "id": "point-1774973728828-e534b5",
+      "lat": 50.88064,
+      "lng": 4.315531,
+      "lon": 4.315531,
+      "instruction": "You are now on the walking path, go right."
+    },
+    {
+      "id": "point-1774973758753-1b4f58",
+      "lat": 50.880984,
+      "lng": 4.315577,
+      "lon": 4.315577,
+      "instruction": "Continue following the walking path."
+    },
+    {
+      "id": "point-1774973776004-2f035f",
+      "lat": 50.881591,
+      "lng": 4.315805,
+      "lon": 4.315805,
+      "instruction": "The walking path curves to the left."
+    },
+    {
+      "id": "point-1774973797198-0deee6",
+      "lat": 50.881801,
+      "lng": 4.315492,
+      "lon": 4.315492,
+      "instruction": "You now reach a junction. Go left and continue on the walking path."
+    },
+    {
+      "id": "point-1774973839725-e79ac4",
+      "lat": 50.881757,
+      "lng": 4.315165,
+      "lon": 4.315165,
+      "instruction": "Turn right here. You will reach a small bridge over the Molenbeek. Cross it."
+    },
+    {
+      "id": "point-1774973954290-76911f",
+      "lat": 50.881847,
+      "lng": 4.315132,
+      "lon": 4.315132,
+      "instruction": "Continue on the path until the next T-junction."
+    },
+    {
+      "id": "point-1774974008425-835197",
+      "lat": 50.8825,
+      "lng": 4.315072,
+      "lon": 4.315072,
+      "instruction": "At the T-junction, turn left."
+    },
+    {
+      "id": "point-1774974062155-e6ff87",
+      "lat": 50.882483,
+      "lng": 4.314266,
+      "lon": 4.314266,
+      "instruction": "Keep following the path."
+    },
+    {
+      "id": "point-1774974083725-b5761b",
+      "lat": 50.882181,
+      "lng": 4.313103,
+      "lon": 4.313103,
+      "instruction": "Keep walking."
+    },
+    {
+      "id": "point-1774974093775-ded19a",
+      "lat": 50.881995,
+      "lng": 4.312175,
+      "lon": 4.312175,
+      "instruction": "Good, you are still on the path."
+    },
+    {
+      "id": "point-1774974113357-9b7d3f",
+      "lat": 50.881853,
+      "lng": 4.310228,
+      "lon": 4.310228,
+      "instruction": "You now reach a T-junction, but continue straight ahead."
+    },
+    {
+      "id": "point-1774974146703-628a1f",
+      "lat": 50.881847,
+      "lng": 4.310111,
+      "lon": 4.310111,
+      "instruction": "Curve to the right."
+    },
+    {
+      "id": "point-1774974164868-e2fd3b",
+      "lat": 50.882103,
+      "lng": 4.309798,
+      "lon": 4.309798,
+      "instruction": "Keep walking."
+    },
+    {
+      "id": "point-1774974187639-292abe",
+      "lat": 50.882314,
+      "lng": 4.309515,
+      "lon": 4.309515,
+      "instruction": "At this junction, go left."
+    },
+    {
+      "id": "point-1774974218149-c09120",
+      "lat": 50.882204,
+      "lng": 4.309187,
+      "lon": 4.309187,
+      "instruction": "Continue the way."
+    },
+    {
+      "id": "point-1774974231739-2b2f6d",
+      "lat": 50.882095,
+      "lng": 4.308877,
+      "lon": 4.308877,
+      "instruction": "The road turns right. On your right is a petting zoo with a field where goats and sheep usually are."
+    },
+    {
+      "id": "point-1774974266195-2044df",
+      "lat": 50.882173,
+      "lng": 4.307882,
+      "lon": 4.307882,
+      "instruction": "You are at a junction. Keep right and follow the road straight ahead."
+    },
+    {
+      "id": "point-1774974412733-a4809f",
+      "lat": 50.88242,
+      "lng": 4.307324,
+      "lon": 4.307324,
+      "instruction": "Continue."
+    },
+    {
+      "id": "point-1774974468188-d8c5a4",
+      "lat": 50.8826,
+      "lng": 4.306894,
+      "lon": 4.306894,
+      "instruction": "Cross the cobblestone road and continue on the path. Watch out for cyclists and sometimes a car."
+    },
+    {
+      "id": "point-1774974523013-38e8f0",
+      "lat": 50.882625,
+      "lng": 4.306818,
+      "lon": 4.306818,
+      "instruction": "Vervolg het pad."
+    },
+    {
+      "id": "point-1774974540533-9c5962",
+      "lat": 50.882724,
+      "lng": 4.305873,
+      "lon": 4.305873,
+      "instruction": "Loop verder. Je bent op het pad."
+    },
+    {
+      "id": "point-1774974588535-1201f4",
+      "lat": 50.882812,
+      "lng": 4.305176,
+      "lon": 4.305176,
+      "instruction": "There is a bench on your left if you want to rest; otherwise keep walking and stay left at the next junction."
+    },
+    {
+      "id": "point-1774974664744-4606fa",
+      "lat": 50.882852,
+      "lng": 4.304656,
+      "lon": 4.304656,
+      "instruction": "Continue."
+    },
+    {
+      "id": "point-1774974678828-f6d74b",
+      "lat": 50.882874,
+      "lng": 4.304361,
+      "lon": 4.304361,
+      "instruction": "Go straight at this junction."
+    },
+    {
+      "id": "point-1774974708371-97a1c2",
+      "lat": 50.882908,
+      "lng": 4.303987,
+      "lon": 4.303987,
+      "instruction": "The road bends slightly to the right."
+    },
+    {
+      "id": "point-1774974729515-e1c68e",
+      "lat": 50.883079,
+      "lng": 4.303228,
+      "lon": 4.303228,
+      "instruction": "Attention, you reach a bridge over the Coralbeek. Go straight across the bridge."
+    },
+    {
+      "id": "point-1774974803586-cddb0e",
+      "lat": 50.88316,
+      "lng": 4.302772,
+      "lon": 4.302772,
+      "instruction": "JLoop verder op het pad."
+    },
+    {
+      "id": "point-1774974819853-592098",
+      "lat": 50.883356,
+      "lng": 4.302123,
+      "lon": 4.302123,
+      "instruction": "Ga door."
+    },
+    {
+      "id": "point-1774974835169-1d5754",
+      "lat": 50.883567,
+      "lng": 4.301684,
+      "lon": 4.301684,
+      "instruction": "You reach a large path. Turn right onto this path."
+    },
+    {
+      "id": "point-1774974936097-109cf1",
+      "lat": 50.883683,
+      "lng": 4.302142,
+      "lon": 4.302142,
+      "instruction": "Stay on the large path. It will make a big curve to the left."
+    },
+    {
+      "id": "point-1774974973905-fe2fb5",
+      "lat": 50.883888,
+      "lng": 4.302298,
+      "lon": 4.302298,
+      "instruction": "Continue."
+    },
+    {
+      "id": "point-1774974985552-0ba643",
+      "lat": 50.884169,
+      "lng": 4.302279,
+      "lon": 4.302279,
+      "instruction": "At this T-junction, go left on the same large path."
+    },
+    {
+      "id": "point-1774975029609-1d78dc",
+      "lat": 50.884191,
+      "lng": 4.302107,
+      "lon": 4.302107,
+      "instruction": "Slight curve to the right."
+    },
+    {
+      "id": "point-1774975046731-d5c508",
+      "lat": 50.884497,
+      "lng": 4.301416,
+      "lon": 4.301416,
+      "instruction": "Slight curve to the left."
+    },
+    {
+      "id": "point-1774975082244-68d991",
+      "lat": 50.88448,
+      "lng": 4.301083,
+      "lon": 4.301083,
+      "instruction": "You are now at Chalet van Laerbeek, where you can eat or drink something. If you want to continue walking, just go ahead; you are on the way back."
+    },
+    {
+      "id": "point-1774975151381-db6233",
+      "lat": 50.884462,
+      "lng": 4.300782,
+      "lon": 4.300782,
+      "instruction": "Go slightly to the left."
+    },
+    {
+      "id": "point-1774975200311-f575ef",
+      "lat": 50.884354,
+      "lng": 4.300644,
+      "lon": 4.300644,
+      "instruction": "You reach a bench on your right. You will encounter a few more."
+    },
+    {
+      "id": "point-1774975225617-6a571b",
+      "lat": 50.884113,
+      "lng": 4.300476,
+      "lon": 4.300476,
+      "instruction": "Go slightly to the left."
+    },
+    {
+      "id": "point-1774975253682-762910",
+      "lat": 50.883962,
+      "lng": 4.300504,
+      "lon": 4.300504,
+      "instruction": "Flauwe bocht naar links"
+    },
+    {
+      "id": "point-1774975350058-9eaa69",
+      "lat": 50.883863,
+      "lng": 4.300641,
+      "lon": 4.300641,
+      "instruction": "Continue on the wide path."
+    },
+    {
+      "id": "point-1774975599932-8bbbab",
+      "lat": 50.883715,
+      "lng": 4.300875,
+      "lon": 4.300875,
+      "instruction": "Opnieuw een bankje langs je rechter kant. Vervolg de weg."
+    },
+    {
+      "id": "point-1774975652671-3c2062",
+      "lat": 50.883568,
+      "lng": 4.301187,
+      "lon": 4.301187,
+      "instruction": "Slight curve to the left."
+    },
+    {
+      "id": "point-1774975676253-08de96",
+      "lat": 50.883563,
+      "lng": 4.301675,
+      "lon": 4.301675,
+      "instruction": "You are now at a point you visited earlier. Turn off the wide path here and take the forest path."
+    },
+    {
+      "id": "point-1774975732699-df0aa9",
+      "lat": 50.883432,
+      "lng": 4.301924,
+      "lon": 4.301924,
+      "instruction": "Ga verder"
+    },
+    {
+      "id": "point-1774975740349-fe6ec0",
+      "lat": 50.883258,
+      "lng": 4.302452,
+      "lon": 4.302452,
+      "instruction": "Loop door."
+    },
+    {
+      "id": "point-1774975749784-f2eee4",
+      "lat": 50.883089,
+      "lng": 4.303178,
+      "lon": 4.303178,
+      "instruction": "You reach the same small bridge as before. Cross it again, but now go immediately right after the bridge onto another path."
+    },
+    {
+      "id": "point-1774975835308-6f864b",
+      "lat": 50.882969,
+      "lng": 4.303217,
+      "lon": 4.303217,
+      "instruction": "You're on the right track. Continue on the path. Be careful as you walk along the Coralbeek; stay slightly to the left."
+    },
+    {
+      "id": "point-1774975897491-2b66ee",
+      "lat": 50.882503,
+      "lng": 4.303155,
+      "lon": 4.303155,
+      "instruction": "ga verder.  Nog steeds naast de coralbeek."
+    },
+    {
+      "id": "point-1774975920682-fb67f0",
+      "lat": 50.882317,
+      "lng": 4.303144,
+      "lon": 4.303144,
+      "instruction": "You now reach a larger path, a cobblestone road. Turn left. Walk along the right side where you can follow a concrete edge next to the cobblestones."
+    },
+    {
+      "id": "point-1774976013422-9f4e7c",
+      "lat": 50.882043,
+      "lng": 4.303832,
+      "lon": 4.303832,
+      "instruction": "Blijf de kasseiweg volgen."
+    },
+    {
+      "id": "point-1774976033409-56af74",
+      "lat": 50.881894,
+      "lng": 4.304299,
+      "lon": 4.304299,
+      "instruction": "flauwe bocht naar links, volg verder."
+    },
+    {
+      "id": "point-1774976071690-cb6d81",
+      "lat": 50.881899,
+      "lng": 4.304548,
+      "lon": 4.304548,
+      "instruction": "Here you leave the cobblestone road and take a narrower path to the right."
+    },
+    {
+      "id": "point-1774976102979-a6efd1",
+      "lat": 50.881784,
+      "lng": 4.304602,
+      "lon": 4.304602,
+      "instruction": "Volg het pad."
+    },
+    {
+      "id": "point-1774976122097-a44f74",
+      "lat": 50.881665,
+      "lng": 4.304685,
+      "lon": 4.304685,
+      "instruction": "You reach a junction, continue left."
+    },
+    {
+      "id": "point-1774976144913-252bd4",
+      "lat": 50.881618,
+      "lng": 4.304952,
+      "lon": 4.304952,
+      "instruction": "Continue. A railway runs on your right."
+    },
+    {
+      "id": "point-1774976158405-73c9e4",
+      "lat": 50.881585,
+      "lng": 4.306193,
+      "lon": 4.306193,
+      "instruction": "Blijf de weg volgen."
+    },
+    {
+      "id": "point-1774976172730-1742c4",
+      "lat": 50.88159,
+      "lng": 4.306626,
+      "lon": 4.306626,
+      "instruction": "Continue; the road turns right."
+    },
+    {
+      "id": "point-1774976188045-ada068",
+      "lat": 50.88142,
+      "lng": 4.306991,
+      "lon": 4.306991,
+      "instruction": "Ga door"
+    },
+    {
+      "id": "point-1774976197511-811f53",
+      "lat": 50.881268,
+      "lng": 4.307428,
+      "lon": 4.307428,
+      "instruction": "Continue."
+    },
+    {
+      "id": "point-1774976210756-90ef2a",
+      "lat": 50.881014,
+      "lng": 4.308725,
+      "lon": 4.308725,
+      "instruction": "Continue, you walk over a wide bridge over the Molenbeek. Right."
+    },
+    {
+      "id": "point-1774976281609-78b372",
+      "lat": 50.880899,
+      "lng": 4.309311,
+      "lon": 4.309311,
+      "instruction": "ga verder."
+    },
+    {
+      "id": "point-1774976295777-bf93e6",
+      "lat": 50.880886,
+      "lng": 4.309572,
+      "lon": 4.309572,
+      "instruction": "Slight curve to the left, continue."
+    },
+    {
+      "id": "point-1774976324479-6f2cb7",
+      "lat": 50.880985,
+      "lng": 4.310228,
+      "lon": 4.310228,
+      "instruction": "Continue the way."
+    },
+    {
+      "id": "point-1774976334320-093f36",
+      "lat": 50.881019,
+      "lng": 4.310601,
+      "lon": 4.310601,
+      "instruction": "Go straight at this junction."
+    },
+    {
+      "id": "point-1774976350828-e5a675",
+      "lat": 50.881092,
+      "lng": 4.311154,
+      "lon": 4.311154,
+      "instruction": "Gentle curve to the right."
+    },
+    {
+      "id": "point-1774976369339-5332f1",
+      "lat": 50.881073,
+      "lng": 4.311543,
+      "lon": 4.311543,
+      "instruction": "Gentle curve to the left."
+    },
+    {
+      "id": "point-1774976387444-ec878f",
+      "lat": 50.881271,
+      "lng": 4.312663,
+      "lon": 4.312663,
+      "instruction": "Continue the way."
+    },
+    {
+      "id": "point-1774976399489-d91150",
+      "lat": 50.881386,
+      "lng": 4.313141,
+      "lon": 4.313141,
+      "instruction": "Continue. Here is a viewpoint over the Jette marsh."
+    },
+    {
+      "id": "point-1774976435902-f2cc24",
+      "lat": 50.881539,
+      "lng": 4.313997,
+      "lon": 4.313997,
+      "instruction": "Continue."
+    },
+    {
+      "id": "point-1774976444272-98b958",
+      "lat": 50.8817,
+      "lng": 4.314943,
+      "lon": 4.314943,
+      "instruction": "Go a bit further."
+    },
+    {
+      "id": "point-1774976464515-87fe7f",
+      "lat": 50.881751,
+      "lng": 4.315132,
+      "lon": 4.315132,
+      "instruction": "You were here earlier at the bridge over the Molenbeek. Now just go straight."
+    },
+    {
+      "id": "point-1774976506268-fc0593",
+      "lat": 50.881786,
+      "lng": 4.315357,
+      "lon": 4.315357,
+      "instruction": "Go a few meters further."
+    },
+    {
+      "id": "point-1774976544865-8c5053",
+      "lat": 50.881799,
+      "lng": 4.315486,
+      "lon": 4.315486,
+      "instruction": "At this junction, take the right. You are almost back at Tentoonstellingenlaan."
+    },
+    {
+      "id": "point-1774976586743-7085c3",
+      "lat": 50.881721,
+      "lng": 4.315697,
+      "lon": 4.315697,
+      "instruction": "Follow the path to the right."
+    },
+    {
+      "id": "point-1774976608382-fedb6f",
+      "lat": 50.881481,
+      "lng": 4.315782,
+      "lon": 4.315782,
+      "instruction": "Vervolg het pad."
+    },
+    {
+      "id": "point-1774976624882-2be126",
+      "lat": 50.880875,
+      "lng": 4.315552,
+      "lon": 4.315552,
+      "instruction": "Continue straight a bit further and you will leave the forest path."
+    },
+    {
+      "id": "point-1774976659232-5e7b3e",
+      "lat": 50.880641,
+      "lng": 4.315532,
+      "lon": 4.315532,
+      "instruction": "Turn left here to return to Tentoonstellingenlaan."
+    },
+    {
+      "id": "point-1774976702539-5df6fd",
+      "lat": 50.880633,
+      "lng": 4.315682,
+      "lon": 4.315682,
+      "instruction": "Turn right and continue on the sidewalk next to Tentoonstellingenlaan."
+    },
+    {
+      "id": "point-1774976750877-3a2f7d",
+      "lat": 50.880118,
+      "lng": 4.315706,
+      "lon": 4.315706,
+      "instruction": "You are at the tram stop. Be careful, you must cross the road to the left here on Tentoonstellingenlaan."
+    },
+    {
+      "id": "point-1774976854124-54a19b",
+      "lat": 50.880126,
+      "lng": 4.315835,
+      "lon": 4.315835,
+      "instruction": "Good, you are now at the tram stop. A bit further on the right is your starting point."
+    },
+    {
+      "id": "point-1774976907083-68bb3c",
+      "lat": 50.880069,
+      "lng": 4.315896,
+      "lon": 4.315896,
+      "instruction": "Congratulations! You have reached your destination."
+    }
+  ]
+}

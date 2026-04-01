@@ -1,0 +1,137 @@
+{
+    "name": "Wandeling Wilgendaal",
+    "slug": "wandeling-wilgendaal",
+    "language": "nl-BE",
+    "headingFeedbackFps": 5,
+    "routeLengthMeters": 1067.2,
+    "updatedAt": "2026-03-31T17:18:56+00:00",
+    "pointCount": 18,
+    "points": [
+        {
+            "id": "point-1774959954989-566219",
+            "lat": 50.888162,
+            "lng": 4.278928,
+            "lon": 4.278928,
+            "instruction": "Je start van thuis. Stap bergop.  Er is enkel een voetpad langs je linker kant."
+        },
+        {
+            "id": "point-1774960102846-61e609",
+            "lat": 50.888652,
+            "lng": 4.278223,
+            "lon": 4.278223,
+            "instruction": "Volg het voetpad gewoon verder voor 50 meter."
+        },
+        {
+            "id": "point-1774960166416-894431",
+            "lat": 50.889124,
+            "lng": 4.277882,
+            "lon": 4.277882,
+            "instruction": "Hier steek je de straat over naar rechts.  Blijf op het voetpad langs de rechterkant."
+        },
+        {
+            "id": "point-1774960224594-9f72d6",
+            "lat": 50.889368,
+            "lng": 4.278653,
+            "lon": 4.278653,
+            "instruction": "Sla binnen enkele passen rechts af.  Blijf op het voetpad. Je bent dan in de Wilgendaal."
+        },
+        {
+            "id": "point-1774960320101-ab4521",
+            "lat": 50.8896,
+            "lng": 4.279421,
+            "lon": 4.279421,
+            "instruction": "Volg de Wilgendaal verder naar beneden, blijf op het voetpad."
+        },
+        {
+            "id": "point-1774960359762-595734",
+            "lat": 50.889939,
+            "lng": 4.280451,
+            "lon": 4.280451,
+            "instruction": "Goed bezig.  blijf op het voetpad."
+        },
+        {
+            "id": "point-1774960391344-43a1aa",
+            "lat": 50.890047,
+            "lng": 4.280838,
+            "lon": 4.280838,
+            "instruction": "Je bent nog op het juiste pad."
+        },
+        {
+            "id": "point-1774960427959-499829",
+            "lat": 50.889242,
+            "lng": 4.282522,
+            "lon": 4.282522,
+            "instruction": "Hier zal je het voetpad van de Wilgendaal verlaten en een smallere voetweg oplopen.  Neem hier dus rechts."
+        },
+        {
+            "id": "point-1774960508061-55f20f",
+            "lat": 50.888416,
+            "lng": 4.283509,
+            "lon": 4.283509,
+            "instruction": "Een bocht naar rechts"
+        },
+        {
+            "id": "point-1774960525897-527655",
+            "lat": 50.887969,
+            "lng": 4.28383,
+            "lon": 4.28383,
+            "instruction": "Een bocht naar links."
+        },
+        {
+            "id": "point-1774960567327-f18bbf",
+            "lat": 50.887699,
+            "lng": 4.283068,
+            "lon": 4.283068,
+            "instruction": "Je bent weer thuis."
+        },
+        {
+            "id": "point-1774972115188-a4615f",
+            "lat": 50.887575,
+            "lng": 4.281391,
+            "lon": 4.281391,
+            "instruction": "Ga licht naar links."
+        },
+        {
+            "id": "point-1774972118427-07c2bf",
+            "lat": 50.887393,
+            "lng": 4.281015,
+            "lon": 4.281015,
+            "instruction": "Sla rechtsaf aan het volgende kruispunt."
+        },
+        {
+            "id": "point-1774972120197-824907",
+            "lat": 50.887914,
+            "lng": 4.280068,
+            "lon": 4.280068,
+            "instruction": "Ga licht naar links."
+        },
+        {
+            "id": "point-1774972121675-91261b",
+            "lat": 50.88791,
+            "lng": 4.279633,
+            "lon": 4.279633,
+            "instruction": "Ga licht naar rechts."
+        },
+        {
+            "id": "point-1774972953992-068c33",
+            "lat": 50.888096,
+            "lng": 4.279397,
+            "lon": 4.279397,
+            "instruction": "Ga licht naar links."
+        },
+        {
+            "id": "point-1774972962362-0be1a7",
+            "lat": 50.888099,
+            "lng": 4.279085,
+            "lon": 4.279085,
+            "instruction": "Sla rechtsaf aan het volgende kruispunt."
+        },
+        {
+            "id": "point-1774972963983-c5ba39",
+            "lat": 50.888152,
+            "lng": 4.279131,
+            "lon": 4.279131,
+            "instruction": "Je hebt je bestemming bereikt."
+        }
+    ]
+}
