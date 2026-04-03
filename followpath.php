@@ -126,6 +126,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action'])) {
     .btn:hover{background:#334155}
     .btnPrimary{background:var(--accent);color:var(--accent-ink);border-color:rgba(250,204,21,.35)}
     .btnPrimary:hover{background:#fde047}
+    .btnSmall{padding:8px 10px;font-size:12px}
+    .mapWrap{position:relative}
     #map{height:74vh;min-height:520px;width:100%;border-radius:16px;overflow:hidden;border:1px solid var(--line)}
     .help{margin:10px 0 0;color:var(--muted);font-size:14px;line-height:1.5}
     .status{padding:10px 12px;border-radius:12px;border:none var(--line);font-size:14px;color:var(--muted)}
@@ -139,11 +141,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action'])) {
     .statLabel{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:8px}
     .statValue{font-size:20px;font-weight:700}
     .trailDirectionValue{font-size:24px;font-weight:700}
-    .trailDirectionCard{position:relative;overflow:hidden;min-height:320px;background:#020617}
-    .trailVideoBg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0;background:#000}
-    .trailDirectionOverlay{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;gap:10px;padding:12px;border-radius:12px;background:linear-gradient(180deg,rgba(2,6,23,.18),rgba(2,6,23,.78) 78%)}
+    .mapHeadingOverlay{position:absolute;left:16px;bottom:16px;z-index:500;display:flex;flex-direction:column;align-items:center;gap:8px;padding:12px 14px;border-radius:18px;background:rgba(2,6,23,.22);box-shadow:0 18px 40px rgba(0,0,0,.28);pointer-events:none}
+    .mapHeadingValue{font-size:22px;font-weight:700}
+    .mapCameraOverlay{position:absolute;top:16px;right:16px;z-index:500;overflow:hidden;width:min(220px,32vw);aspect-ratio:4/3;border-radius:16px;border:1px solid var(--line);background:#020617;box-shadow:0 18px 40px rgba(0,0,0,.28);pointer-events:none}
+    .trailVideoBg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0;background:#000;opacity:0}
+    .trailPreviewBg{position:absolute;inset:0;width:100%;height:100%;z-index:0;background:#000}
+    .trailMaskOverlay{position:absolute;inset:0;width:100%;height:100%;z-index:1;pointer-events:none}
+    .hidden{display:none !important}
     .compassWrap{display:flex;flex-direction:column;align-items:center;gap:6px}
-    #compass{width:140px;height:140px;display:block}
+    #mapCompass{width:110px;height:110px;display:block}
     .list{display:flex;flex-direction:column;gap:10px;max-height:34vh;overflow:auto;padding-right:4px}
     .pointItem{padding:12px;border-radius:14px;border:1px solid var(--line);background:#0b1220}
     .pointItem.active{border-color:rgba(34,211,238,.55);background:#0f1a2c}
@@ -160,10 +166,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action'])) {
     @media (max-width: 1100px){
       .layout{grid-template-columns:1fr}
       #map{height:58vh;min-height:380px}
+      .mapHeadingOverlay{left:12px;bottom:12px}
+      .mapCameraOverlay{top:12px;right:12px;width:min(200px,34vw)}
     }
     @media (max-width: 720px){
       .layout{padding:12px}
       .stats{grid-template-columns:1fr}
+      .mapHeadingOverlay{left:12px;right:12px;bottom:12px}
+      .mapCameraOverlay{top:12px;right:12px;width:min(150px,38vw)}
+      .mapHeadingValue{font-size:20px}
     }
   </style>
 </head>
@@ -192,25 +203,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action'])) {
       <button id="satelliteToggleBtn" class="btn" type="button">Show Satellite</button>
       <button id="stopBtn" class="btn" type="button">Stop</button>
     </div>
-    <div id="status" class="status">Choose a saved path to begin.</div>
-    <div id="map" aria-label="Walking map"></div>
-  </section>
-
-  <aside class="panel sidePanel">
-    
-    <div class="card trailDirectionCard">
-      <div class="sectionTitle">Trail Direction</div>
-      <video id="trailVideo" class="trailVideoBg" autoplay playsinline muted></video>
-      <div class="trailDirectionOverlay" style="margin-top:10px">
+    <div class="mapWrap">
+      <div id="map" aria-label="Walking map"></div>
+      <div id="mapHeadingOverlay" class="mapHeadingOverlay">
         <div class="compassWrap">
-          <canvas id="compass" width="140" height="140"></canvas>
+          <canvas id="mapCompass" width="110" height="110"></canvas>
         </div>
-        <div id="trailDirectionValue" class="trailDirectionValue">--</div>
-        <div id="trailDirectionMeta" class="muted">Segmentation guidance inactive.</div>
+        <div id="mapTrailDirectionValue" class="mapHeadingValue">--</div>
+        <div id="mapTrailDirectionMeta" class="muted">Segmentation guidance inactive.</div>
+      </div>
+      <div id="mapCameraOverlay" class="mapCameraOverlay">
+        <video id="trailVideo" class="trailVideoBg" autoplay playsinline muted></video>
+        <canvas id="trailPreview" class="trailPreviewBg"></canvas>
+        <canvas id="trailMaskOverlay" class="trailMaskOverlay"></canvas>
       </div>
     </div>
+  </section>
+  <aside class="panel sidePanel">
     <div class="card">
-      <div class="sectionTitle">Current Instruction</div>
       <div id="currentInstruction" class="bigInstruction" style="margin-top:10px">No path loaded.</div>
       <div id="currentInstructionMeta" class="muted" style="margin-top:10px">Load a route and start tracking to receive guidance.</div>
     </div>
@@ -221,9 +231,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action'])) {
     </div>
     <div class="card">
       <div class="sectionTitle">Session</div>
-      <div id="sessionIdValue" class="bigInstruction" style="margin-top:10px;font-size:20px">--</div>
+      <div style="display:flex;align-items:center;gap:10px;margin-top:10px">
+        <div id="sessionIdValue" class="bigInstruction" style="margin:0;font-size:20px;flex:1 1 auto">--</div>
+        <button id="copySessionBtn" class="btn btnSmall" type="button">Copy</button>
+      </div>
       <div id="sessionIdMeta" class="muted" style="margin-top:10px">Start walking to create a live session id.</div>
     </div>
+    <div id="status" class="status">Choose a saved path to begin.</div>
 
     <div class="card">
       <div class="sectionTitle">GPS Status</div>
@@ -290,8 +304,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action'])) {
   const JPEG_QUALITY = 0.70;
   const DEFAULT_LANGUAGE = "nl-BE";
   const DEFAULT_HEADING_FEEDBACK_FPS = 1.0;
-  const DEFAULT_MODEL = "1";
+  const DEFAULT_MODEL = "unrealsim";
+  const DEFAULT_MODEL_CONFIDENCE = 0.5;
 
+  const topbarEl = document.querySelector(".topbar");
   const savedPathsEl = document.getElementById("savedPaths");
   const startBtn = document.getElementById("startBtn");
   const repeatBtn = document.getElementById("repeatBtn");
@@ -310,16 +326,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action'])) {
   const helperMessageMetaEl = document.getElementById("helperMessageMeta");
   const sessionIdValueEl = document.getElementById("sessionIdValue");
   const sessionIdMetaEl = document.getElementById("sessionIdMeta");
-  const trailDirectionValueEl = document.getElementById("trailDirectionValue");
-  const trailDirectionMetaEl = document.getElementById("trailDirectionMeta");
+  const copySessionBtn = document.getElementById("copySessionBtn");
+  const mapHeadingOverlayEl = document.getElementById("mapHeadingOverlay");
+  const mapCameraOverlayEl = document.getElementById("mapCameraOverlay");
+  const mapTrailDirectionValueEl = document.getElementById("mapTrailDirectionValue");
+  const mapTrailDirectionMetaEl = document.getElementById("mapTrailDirectionMeta");
   const sentFramesValueEl = document.getElementById("sentFramesValue");
   const sendRateValueEl = document.getElementById("sendRateValue");
   const streamMetaEl = document.getElementById("streamMeta");
   const trailVideoEl = document.getElementById("trailVideo");
+  const trailPreviewEl = document.getElementById("trailPreview");
+  const trailPreviewCtx = trailPreviewEl.getContext("2d", { alpha: false });
+  const trailMaskOverlayEl = document.getElementById("trailMaskOverlay");
+  const trailMaskOverlayCtx = trailMaskOverlayEl.getContext("2d");
   const trailCapEl = document.getElementById("trailCap");
   const trailCapCtx = trailCapEl.getContext("2d", { alpha: false });
-  const compass = document.getElementById("compass");
-  const compCtx = compass.getContext("2d");
+  const mapCompass = document.getElementById("mapCompass");
+  const mapCompCtx = mapCompass.getContext("2d");
 
   const map = L.map("map").setView(DEFAULT_CENTER, 16);
   const streetLayer = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
@@ -349,6 +372,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action'])) {
   let currentPath = null;
   let currentLanguage = DEFAULT_LANGUAGE;
   let currentModel = DEFAULT_MODEL;
+  let currentModelConfidence = DEFAULT_MODEL_CONFIDENCE;
+  let currentReturnMasks = false;
+  let currentSendMQTT = false;
   let headingFeedbackFps = DEFAULT_HEADING_FEEDBACK_FPS;
   let sendIntervalMs = Math.max(100, Math.round(1000 / DEFAULT_HEADING_FEEDBACK_FPS));
   let routePoints = [];
@@ -374,11 +400,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action'])) {
   let framesSince = 0;
   let lastRateT = performance.now();
   const sentAtByFrameId = new Map();
+  let lastLatency = null;
+  let latestResultMasks = [];
+  let trailPreviewRafId = null;
   let satelliteVisible = false;
 
   function setStatus(message, tone = "") {
     statusEl.textContent = message;
     statusEl.className = `status${tone ? ` ${tone}` : ""}`;
+  }
+
+  function setWalkingChromeVisibility(isWalking) {
+    startBtn.classList.toggle("hidden", isWalking);
+    if (topbarEl) {
+      topbarEl.classList.toggle("hidden", isWalking);
+    }
   }
 
   function updateBaseLayer() {
@@ -432,6 +468,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action'])) {
     const n = Number(value);
     if (!Number.isFinite(n)) return null;
     return ((n % 360) + 360) % 360;
+  }
+
+  function normalizeModelName(value) {
+    const normalized = String(value || "").trim().toLowerCase();
+    if (normalized === "1") return "unrealsim";
+    if (normalized === "2") return "laerbeekbos";
+    if (normalized === "3") return "kaai";
+    if (["unrealsim", "laerbeekbos", "kaai", "denham"].includes(normalized)) {
+      return normalized;
+    }
+    return DEFAULT_MODEL;
   }
 
   function createSessionId() {
@@ -491,42 +538,174 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action'])) {
     window.speechSynthesis.onvoiceschanged = () => {};
   }
 
-  function drawArrow(headingDeg) {
-    const w = compass.width;
-    const h = compass.height;
+  function drawArrowOnCanvas(canvasEl, canvasCtx, headingDeg) {
+    const w = canvasEl.width;
+    const h = canvasEl.height;
     const cx = w / 2;
     const cy = h / 2;
 
-    compCtx.clearRect(0, 0, w, h);
-    compCtx.beginPath();
-    compCtx.arc(cx, cy, 62, 0, Math.PI * 2);
-    compCtx.strokeStyle = "rgba(255,255,255,0.35)";
-    compCtx.lineWidth = 2;
-    compCtx.stroke();
+    canvasCtx.clearRect(0, 0, w, h);
+    canvasCtx.beginPath();
+    canvasCtx.arc(cx, cy, Math.max(24, Math.min(w, h) / 2 - 8), 0, Math.PI * 2);
+    canvasCtx.strokeStyle = "rgba(255,255,255,0.35)";
+    canvasCtx.lineWidth = 2;
+    canvasCtx.stroke();
 
-    compCtx.fillStyle = "rgba(255,255,255,0.7)";
-    compCtx.font = "12px system-ui";
-    compCtx.textAlign = "center";
-    compCtx.fillText("Forward", cx, 14);
+    canvasCtx.fillStyle = "rgba(255,255,255,0.7)";
+    canvasCtx.font = "12px system-ui";
+    canvasCtx.textAlign = "center";
+    canvasCtx.fillText("Forward", cx, 14);
 
     if (typeof headingDeg !== "number" || Number.isNaN(headingDeg)) return;
 
     const angleRad = (-headingDeg * Math.PI) / 180;
-    compCtx.save();
-    compCtx.translate(cx, cy);
-    compCtx.rotate(angleRad);
-    compCtx.beginPath();
-    compCtx.moveTo(-8, -3);
-    compCtx.lineTo(40, -3);
-    compCtx.lineTo(40, -10);
-    compCtx.lineTo(56, 0);
-    compCtx.lineTo(40, 10);
-    compCtx.lineTo(40, 3);
-    compCtx.lineTo(-8, 3);
-    compCtx.closePath();
-    compCtx.fillStyle = "#ff3b30";
-    compCtx.fill();
-    compCtx.restore();
+    const arrowBody = Math.max(24, Math.min(w, h) * 0.28);
+    const arrowTip = Math.max(36, Math.min(w, h) * 0.4);
+    canvasCtx.save();
+    canvasCtx.translate(cx, cy);
+    canvasCtx.rotate(angleRad);
+    canvasCtx.beginPath();
+    canvasCtx.moveTo(-8, -3);
+    canvasCtx.lineTo(arrowBody, -3);
+    canvasCtx.lineTo(arrowBody, -10);
+    canvasCtx.lineTo(arrowTip, 0);
+    canvasCtx.lineTo(arrowBody, 10);
+    canvasCtx.lineTo(arrowBody, 3);
+    canvasCtx.lineTo(-8, 3);
+    canvasCtx.closePath();
+    canvasCtx.fillStyle = "#ff3b30";
+    canvasCtx.fill();
+    canvasCtx.restore();
+  }
+
+  function drawArrow(headingDeg) {
+    drawArrowOnCanvas(mapCompass, mapCompCtx, headingDeg);
+  }
+
+  function syncTrailDirectionMode() {
+    mapHeadingOverlayEl.classList.remove("hidden");
+    mapCameraOverlayEl.classList.remove("hidden");
+  }
+
+  function resizeTrailMaskOverlay() {
+    const width = Math.max(1, Math.round(trailMaskOverlayEl.clientWidth));
+    const height = Math.max(1, Math.round(trailMaskOverlayEl.clientHeight));
+    if (trailMaskOverlayEl.width !== width || trailMaskOverlayEl.height !== height) {
+      trailMaskOverlayEl.width = width;
+      trailMaskOverlayEl.height = height;
+    }
+  }
+
+  function clearTrailMaskOverlay() {
+    resizeTrailMaskOverlay();
+    trailMaskOverlayCtx.clearRect(0, 0, trailMaskOverlayEl.width, trailMaskOverlayEl.height);
+  }
+
+  function resizeTrailPreview() {
+    const width = Math.max(1, Math.round(trailPreviewEl.clientWidth));
+    const height = Math.max(1, Math.round(trailPreviewEl.clientHeight));
+    if (trailPreviewEl.width !== width || trailPreviewEl.height !== height) {
+      trailPreviewEl.width = width;
+      trailPreviewEl.height = height;
+    }
+  }
+
+  function clearTrailPreview() {
+    resizeTrailPreview();
+    trailPreviewCtx.fillStyle = "#000";
+    trailPreviewCtx.fillRect(0, 0, trailPreviewEl.width, trailPreviewEl.height);
+  }
+
+  function drawTrailPreviewFrame() {
+    resizeTrailPreview();
+    if (trailVideoEl.videoWidth && trailVideoEl.videoHeight) {
+      trailPreviewCtx.drawImage(trailVideoEl, 0, 0, trailPreviewEl.width, trailPreviewEl.height);
+      return;
+    }
+    clearTrailPreview();
+  }
+
+  function scheduleTrailPreviewRender() {
+    if (trailPreviewRafId !== null) {
+      cancelAnimationFrame(trailPreviewRafId);
+    }
+
+    const tick = () => {
+      drawTrailPreviewFrame();
+      if (stream) {
+        trailPreviewRafId = requestAnimationFrame(tick);
+      } else {
+        trailPreviewRafId = null;
+      }
+    };
+
+    trailPreviewRafId = requestAnimationFrame(tick);
+  }
+
+  function stopTrailPreviewRender() {
+    if (trailPreviewRafId !== null) {
+      cancelAnimationFrame(trailPreviewRafId);
+      trailPreviewRafId = null;
+    }
+    clearTrailPreview();
+  }
+
+  function isPointPair(value) {
+    return Array.isArray(value)
+      && value.length >= 2
+      && Number.isFinite(Number(value[0]))
+      && Number.isFinite(Number(value[1]));
+  }
+
+  function collectMaskPolygons(value, polygons = []) {
+    if (!Array.isArray(value) || !value.length) {
+      return polygons;
+    }
+    if (value.every((item) => isPointPair(item))) {
+      polygons.push(value);
+      return polygons;
+    }
+    value.forEach((item) => collectMaskPolygons(item, polygons));
+    return polygons;
+  }
+
+  function drawTrailMaskOverlay(maskData) {
+    resizeTrailMaskOverlay();
+    trailMaskOverlayCtx.clearRect(0, 0, trailMaskOverlayEl.width, trailMaskOverlayEl.height);
+
+    const polygons = collectMaskPolygons(maskData);
+    if (!polygons.length) {
+      return;
+    }
+
+    const canvasWidth = trailMaskOverlayEl.width;
+    const canvasHeight = trailMaskOverlayEl.height;
+    const scaleX = canvasWidth / TARGET_W;
+    const scaleY = canvasHeight / TARGET_H;
+
+    trailMaskOverlayCtx.fillStyle = "rgba(34, 211, 238, 0.28)";
+    trailMaskOverlayCtx.strokeStyle = "rgba(34, 211, 238, 0.9)";
+    trailMaskOverlayCtx.lineWidth = 2;
+
+    polygons.forEach((polygon) => {
+      let started = false;
+      trailMaskOverlayCtx.beginPath();
+      polygon.forEach((point) => {
+        const x = Number(point[0]) * scaleX;
+        const y = Number(point[1]) * scaleY;
+        if (!started) {
+          trailMaskOverlayCtx.moveTo(x, y);
+          started = true;
+        } else {
+          trailMaskOverlayCtx.lineTo(x, y);
+        }
+      });
+      if (started) {
+        trailMaskOverlayCtx.closePath();
+        trailMaskOverlayCtx.fill();
+        trailMaskOverlayCtx.stroke();
+      }
+    });
   }
 
   function escapeHtml(value) {
@@ -709,9 +888,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action'])) {
 
   function renderSessionId() {
     sessionIdValueEl.textContent = currentSessionId || "--";
+    copySessionBtn.disabled = !currentSessionId;
     sessionIdMetaEl.textContent = currentSessionId
       ? "Share this session id with the remote assistant."
       : "Start walking to create a live session id.";
+  }
+
+  async function copySessionId() {
+    if (!currentSessionId) {
+      setStatus("No active session id to copy.", "warn");
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(currentSessionId);
+      sessionIdMetaEl.textContent = "Session id copied to clipboard.";
+      setStatus("Session id copied.", "ok");
+    } catch (error) {
+      console.warn("Clipboard copy failed:", error);
+      sessionIdMetaEl.textContent = "Failed to copy session id.";
+      setStatus("Failed to copy session id.", "warn");
+    }
   }
 
   function renderHeadingSpeechToggle() {
@@ -754,17 +951,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action'])) {
 
   function renderTrailDirection() {
     const directionLabel = getDirectionLabelForHeading(latestHeading);
-    trailDirectionValueEl.textContent = directionLabel || "--";
+    mapTrailDirectionValueEl.textContent = directionLabel || "--";
     drawArrow(latestHeading);
+    drawTrailMaskOverlay(latestResultMasks);
     if (!walkingActive) {
-      trailDirectionMetaEl.textContent = "Segmentation guidance inactive.";
+      mapTrailDirectionMetaEl.textContent = "Segmentation guidance inactive.";
       return;
     }
     if (latestHeading === null) {
-      trailDirectionMetaEl.textContent = "Waiting for live segmentation heading...";
+      mapTrailDirectionMetaEl.textContent = "Waiting for live segmentation heading...";
       return;
     }
-    trailDirectionMetaEl.textContent = `Live heading ${formatHeading(latestHeading)}`;
+    mapTrailDirectionMetaEl.textContent = `Live heading ${formatHeading(latestHeading)}`;
   }
 
   function updateSendRate() {
@@ -988,6 +1186,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action'])) {
 
     trailVideoEl.srcObject = stream;
     await trailVideoEl.play();
+    scheduleTrailPreviewRender();
 
     const track = stream.getVideoTracks()[0];
     activeVideoDeviceId = track?.getSettings?.().deviceId ?? null;
@@ -1017,7 +1216,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action'])) {
     if (isAuthenticated) return;
     isAuthenticated = true;
     restartCaptureTimer();
-    trailDirectionMetaEl.textContent = "Live segmentation connected.";
+    mapTrailDirectionMetaEl.textContent = "Live segmentation connected.";
     streamMetaEl.textContent = `Configured interval: ${(sendIntervalMs / 1000).toFixed(2)} s per frame | ${headingFeedbackFps.toFixed(1)} fps target.`;
   }
 
@@ -1034,6 +1233,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action'])) {
     authStarted = false;
     latestHeading = null;
     lastSpokenDirectionKey = null;
+    lastLatency = null;
+    latestResultMasks = [];
     sentFrames = 0;
     framesSince = 0;
     lastRateT = performance.now();
@@ -1046,7 +1247,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action'])) {
       await startCamera(activeVideoDeviceId);
     } catch (error) {
       console.error("Camera error:", error);
-      trailDirectionMetaEl.textContent = "Camera unavailable for segmentation guidance.";
+      mapTrailDirectionMetaEl.textContent = "Camera unavailable for segmentation guidance.";
       return;
     }
 
@@ -1060,12 +1261,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action'])) {
 
       ws.onerror = (error) => {
         console.error("WS error", error);
-        trailDirectionMetaEl.textContent = "Segmentation websocket error.";
+        mapTrailDirectionMetaEl.textContent = "Segmentation websocket error.";
       };
 
       ws.onclose = () => {
         if (walkingActive) {
-          trailDirectionMetaEl.textContent = "Segmentation guidance disconnected.";
+          mapTrailDirectionMetaEl.textContent = "Segmentation guidance disconnected.";
         }
         stopSegmentationGuidance(false);
         renderTrailDirection();
@@ -1098,7 +1299,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action'])) {
             payload?.type === "unauthorized" ||
             payload?.authenticated === false
           ) {
-            trailDirectionMetaEl.textContent = "Segmentation authentication failed.";
+            mapTrailDirectionMetaEl.textContent = "Segmentation authentication failed.";
             stopSegmentationGuidance(true);
             return;
           }
@@ -1131,15 +1332,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action'])) {
             updateDirectionSpeech();
           }
 
+          if (payload?.resultMasks !== undefined || payload?.returnMasks !== undefined) {
+            latestResultMasks = payload?.resultMasks ?? payload?.returnMasks ?? [];
+            renderTrailDirection();
+          } else if (payload?.frame_id !== undefined) {
+            latestResultMasks = [];
+            renderTrailDirection();
+          }
+
           const frameId = payload?.frame_id;
           if (frameId !== null && frameId !== undefined) {
+            const sentAt = sentAtByFrameId.get(String(frameId));
+            if (typeof sentAt === "number") {
+              lastLatency = Math.max(0, performance.now() - sentAt);
+            }
             sentAtByFrameId.delete(String(frameId));
           }
         } catch {}
       };
     } catch (error) {
       console.error("WS connect failed", error);
-      trailDirectionMetaEl.textContent = "Unable to connect segmentation guidance.";
+      mapTrailDirectionMetaEl.textContent = "Unable to connect segmentation guidance.";
       stopSegmentationGuidance(true);
     }
   }
@@ -1162,6 +1375,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action'])) {
       stream.getTracks().forEach((track) => track.stop());
       stream = null;
     }
+    stopTrailPreviewRender();
 
     sentAtByFrameId.clear();
     nextFrameId = 1;
@@ -1171,6 +1385,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action'])) {
     authStarted = false;
     latestHeading = null;
     lastSpokenDirectionKey = null;
+    lastLatency = null;
+    latestResultMasks = [];
     framesSince = 0;
     sendRateValueEl.textContent = "0.0 fps";
     streamMetaEl.textContent = `Configured interval: ${(sendIntervalMs / 1000).toFixed(2)} s per frame | ${headingFeedbackFps.toFixed(1)} fps target.`;
@@ -1191,6 +1407,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action'])) {
       try {
         const frameId = String(nextFrameId++);
         const buf = await blob.arrayBuffer();
+        sentAtByFrameId.set(frameId, performance.now());
 
         ws.send(JSON.stringify({
           type: "frame_meta",
@@ -1200,10 +1417,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action'])) {
           longitude: latestLongitude,
           gps_accuracy: latestAccuracy,
           model: currentModel,
-          source: "live_camera"
+          confidence: currentModelConfidence,
+          source: "live_camera",
+          lastlatency: lastLatency,
+          returnMasks: currentReturnMasks,
+          sendMQTT: currentSendMQTT
         }));
 
-        sentAtByFrameId.set(frameId, performance.now());
         ws.send(buf);
         sentFrames += 1;
         sentFramesValueEl.textContent = String(sentFrames);
@@ -1296,7 +1516,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action'])) {
 
     currentPath = payload.path;
     currentLanguage = payload.path.language === "en-GB" ? "en-GB" : DEFAULT_LANGUAGE;
-    currentModel = ["1", "2", "3"].includes(String(payload.path.model)) ? String(payload.path.model) : DEFAULT_MODEL;
+    currentModel = normalizeModelName(payload.path.model);
+    const loadedModelConfidence = Number.parseFloat(payload.path.modelConfidence);
+    currentModelConfidence = Number.isFinite(loadedModelConfidence)
+      ? Math.min(1, Math.max(0, loadedModelConfidence))
+      : DEFAULT_MODEL_CONFIDENCE;
+    currentReturnMasks = payload.path.returnMasks === true;
+    currentSendMQTT = payload.path.sendMQTT === true;
+    syncTrailDirectionMode();
     const loadedHeadingFeedbackFps = Number.parseFloat(payload.path.headingFeedbackFps);
     headingFeedbackFps = Number.isFinite(loadedHeadingFeedbackFps)
       ? Math.min(10, Math.max(0.2, loadedHeadingFeedbackFps))
@@ -1332,6 +1559,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action'])) {
     walkingActive = true;
     lastSpokenPointId = null;
     offRouteWarningActive = false;
+    setWalkingChromeVisibility(true);
     setStatus(`Walking ${currentPath?.name || "route"}.`, "ok");
     startLocationTracking();
     startSegmentationGuidance();
@@ -1344,6 +1572,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action'])) {
   function stopWalking() {
     stopLocationTracking();
     stopSegmentationGuidance();
+    setWalkingChromeVisibility(false);
     if ("speechSynthesis" in window) {
       window.speechSynthesis.cancel();
     }
@@ -1381,6 +1610,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action'])) {
   startBtn.addEventListener("click", startWalking);
   repeatBtn.addEventListener("click", repeatLastInstruction);
   headingSpeechToggleBtn.addEventListener("click", toggleHeadingSpeech);
+  copySessionBtn.addEventListener("click", () => {
+    copySessionId().catch(() => {
+      sessionIdMetaEl.textContent = "Failed to copy session id.";
+      setStatus("Failed to copy session id.", "warn");
+    });
+  });
   satelliteToggleBtn.addEventListener("click", () => {
     satelliteVisible = !satelliteVisible;
     updateBaseLayer();
@@ -1393,8 +1628,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action'])) {
   renderRoute();
   renderSessionId();
   renderHeadingSpeechToggle();
+  syncTrailDirectionMode();
+  setWalkingChromeVisibility(false);
   drawArrow(null);
+  clearTrailPreview();
+  clearTrailMaskOverlay();
   updateBaseLayer();
+  window.addEventListener("resize", () => {
+    drawTrailPreviewFrame();
+    renderTrailDirection();
+  });
   loadSavedPaths().catch(() => setStatus("Unable to list saved paths.", "warn"));
 </script>
 </body>

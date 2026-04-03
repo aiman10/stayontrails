@@ -25,6 +25,17 @@ function slugifyRouteName(string $value): string {
     return $value !== '' ? $value : 'path-' . date('Ymd-His');
 }
 
+function normalizeModelName(string $value): string {
+    $normalized = trim(strtolower($value));
+    return match ($normalized) {
+        '1' => 'unrealsim',
+        '2' => 'laerbeekbos',
+        '3' => 'kaai',
+        'unrealsim', 'laerbeekbos', 'kaai', 'denham' => $normalized,
+        default => 'unrealsim',
+    };
+}
+
 function getDistanceMeters(float $lat1, float $lon1, float $lat2, float $lon2): float {
     $earthRadius = 6371000;
     $dLat = deg2rad($lat2 - $lat1);
@@ -135,7 +146,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_GET['action']) && $_GET['ac
     $points = $payload['points'] ?? null;
     $language = trim((string)($payload['language'] ?? 'nl-BE'));
     $headingFeedbackFps = $payload['headingFeedbackFps'] ?? 1;
-    $model = trim((string)($payload['model'] ?? '1'));
+    $modelConfidence = $payload['modelConfidence'] ?? 0.5;
+    $model = normalizeModelName((string)($payload['model'] ?? 'unrealsim'));
+    $returnMasks = filter_var($payload['returnMasks'] ?? false, FILTER_VALIDATE_BOOLEAN);
+    $sendMQTT = filter_var($payload['sendMQTT'] ?? false, FILTER_VALIDATE_BOOLEAN);
     if ($name === '') {
         jsonResponse(['ok' => false, 'error' => 'Path name is required.'], 400);
     }
@@ -145,8 +159,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_GET['action']) && $_GET['ac
     if (!in_array($language, ['nl-BE', 'en-GB'], true)) {
         $language = 'nl-BE';
     }
-    if (!in_array($model, ['1', '2', '3'], true)) {
-        $model = '1';
+    $modelConfidence = is_numeric($modelConfidence) ? (float)$modelConfidence : 0.5;
+    if ($modelConfidence < 0 || $modelConfidence > 1) {
+        jsonResponse(['ok' => false, 'error' => 'Model confidence must be between 0 and 1.'], 400);
     }
     $headingFeedbackFps = is_numeric($headingFeedbackFps) ? (float)$headingFeedbackFps : 1;
     if ($headingFeedbackFps < 0.2 || $headingFeedbackFps > 10) {
@@ -175,6 +190,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_GET['action']) && $_GET['ac
         'slug' => $slug,
         'language' => $language,
         'model' => $model,
+        'modelConfidence' => round($modelConfidence, 2),
+        'returnMasks' => $returnMasks,
+        'sendMQTT' => $sendMQTT,
         'headingFeedbackFps' => round($headingFeedbackFps, 2),
         'routeLengthMeters' => round(getRouteLengthMeters($normalizedPoints), 1),
         'updatedAt' => gmdate('c'),
@@ -359,9 +377,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_GET['action']) && $_GET['ac
         <div class="field">
           <label for="pathModel">Model</label>
           <select id="pathModel">
-            <option value="1">1: Simulation</option>
-            <option value="2">2: Laerbeekbos (Brussels)</option>
-            <option value="3">3: Kaai (Ehb)</option>
+            <option value="unrealsim">Simulation</option>
+            <option value="laerbeekbos">Laerbeekbos (Brussels)</option>
+            <option value="kaai">Kaai (Ehb)</option>
+            <option value="denham">Den ham (Zellik)</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="pathModelConfidence">Model Confidence</label>
+          <input id="pathModelConfidence" type="number" min="0" max="1" step="0.05" value="0.5" />
+        </div>
+        <div class="field">
+          <label for="pathReturnMasks">Display Mask</label>
+          <select id="pathReturnMasks">
+            <option value="true">Yes</option>
+            <option value="false">No</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="pathSendMQTT">Activate MQTT servo</label>
+          <select id="pathSendMQTT">
+            <option value="true">Yes</option>
+            <option value="false">No</option>
           </select>
         </div>
       </div>
@@ -437,6 +474,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_GET['action']) && $_GET['ac
   const pathLanguageEl = document.getElementById("pathLanguage");
   const headingFeedbackFpsEl = document.getElementById("headingFeedbackFps");
   const pathModelEl = document.getElementById("pathModel");
+  const pathModelConfidenceEl = document.getElementById("pathModelConfidence");
+  const pathReturnMasksEl = document.getElementById("pathReturnMasks");
+  const pathSendMQTTEl = document.getElementById("pathSendMQTT");
   const pointLatEl = document.getElementById("pointLat");
   const pointLngEl = document.getElementById("pointLng");
   const pointInstructionEl = document.getElementById("pointInstruction");
@@ -687,11 +727,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_GET['action']) && $_GET['ac
 
   function exportDocument() {
     const headingFeedbackFps = Number.parseFloat(headingFeedbackFpsEl.value);
+    const modelConfidence = Number.parseFloat(pathModelConfidenceEl.value);
     return {
       name: pathNameEl.value.trim(),
       slug: slugify(pathNameEl.value.trim()),
       language: pathLanguageEl.value || "nl-BE",
-      model: pathModelEl.value || "1",
+      model: pathModelEl.value || "unrealsim",
+      modelConfidence: Number.isFinite(modelConfidence) ? Number(modelConfidence.toFixed(2)) : 0.5,
+      returnMasks: pathReturnMasksEl.value === "true",
+      sendMQTT: pathSendMQTTEl.value === "true",
       headingFeedbackFps: Number.isFinite(headingFeedbackFps) ? Number(headingFeedbackFps.toFixed(1)) : 1.0,
       routeLengthMeters: Number(getRouteLengthMeters().toFixed(1)),
       pointCount: points.length,
@@ -784,7 +828,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_GET['action']) && $_GET['ac
     pathNameEl.value = "";
     pathLanguageEl.value = "nl-BE";
     headingFeedbackFpsEl.value = "1.0";
-    pathModelEl.value = "1";
+    pathModelEl.value = "unrealsim";
+    pathModelConfidenceEl.value = "0.5";
+    pathReturnMasksEl.value = "false";
+    pathSendMQTTEl.value = "false";
     savedPathsEl.value = "";
     selectPoint(null);
     render();
@@ -922,7 +969,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_GET['action']) && $_GET['ac
 
     pathNameEl.value = payload.path.name || slug;
     pathLanguageEl.value = payload.path.language === "en-GB" ? "en-GB" : "nl-BE";
-    pathModelEl.value = ["1", "2", "3"].includes(String(payload.path.model)) ? String(payload.path.model) : "1";
+    const loadedModel = String(payload.path.model || "").trim().toLowerCase();
+    pathModelEl.value = ["unrealsim", "laerbeekbos", "kaai", "denham"].includes(loadedModel)
+      ? loadedModel
+      : (loadedModel === "1"
+        ? "unrealsim"
+        : loadedModel === "2"
+          ? "laerbeekbos"
+          : loadedModel === "3"
+          ? "kaai"
+            : "unrealsim");
+    const loadedModelConfidence = Number.parseFloat(payload.path.modelConfidence);
+    pathModelConfidenceEl.value = Number.isFinite(loadedModelConfidence)
+      ? Math.min(1, Math.max(0, loadedModelConfidence)).toFixed(2)
+      : "0.5";
+    pathReturnMasksEl.value = payload.path.returnMasks === true ? "true" : "false";
+    pathSendMQTTEl.value = payload.path.sendMQTT === true ? "true" : "false";
     const loadedHeadingFeedbackFps = Number.parseFloat(payload.path.headingFeedbackFps);
     headingFeedbackFpsEl.value = Number.isFinite(loadedHeadingFeedbackFps)
       ? loadedHeadingFeedbackFps.toFixed(1)
@@ -961,6 +1023,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_GET['action']) && $_GET['ac
     render();
   });
   pathModelEl.addEventListener("change", () => {
+    render();
+  });
+  pathModelConfidenceEl.addEventListener("input", () => {
+    render();
+  });
+  pathReturnMasksEl.addEventListener("change", () => {
+    render();
+  });
+  pathSendMQTTEl.addEventListener("change", () => {
     render();
   });
   savedPathsEl.addEventListener("change", () => {
