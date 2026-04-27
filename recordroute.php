@@ -408,7 +408,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_GET['action']) && $_GET['ac
     <div class="card" style="margin-top:14px">
       <div class="sectionTitle">Latest Thumbnails</div>
       <div id="latestThumbs" class="thumbGrid"></div>
-      <button id="showAllBtn" class="btn" type="button" style="margin-top:12px">Show All</button>
+      <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
+        <button id="showAllBtn" class="btn" type="button">Show All</button>
+        <button id="annotateBtn" class="btn" type="button"
+                style="background:#164e63;color:#22d3ee;border-color:rgba(34,211,238,.35)">
+          Annotate
+        </button>
+      </div>
       <div id="allThumbs" class="thumbGrid hidden"></div>
     </div>
   </aside>
@@ -832,6 +838,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_GET['action']) && $_GET['ac
   showAllBtn.addEventListener("click", () => {
     allVisible = !allVisible;
     renderImages();
+  });
+  document.getElementById("annotateBtn").addEventListener("click", () => {
+    const raw = modelNameEl.value.trim();
+    if (!raw) { setStatus("Enter a model name first.", "warn"); return; }
+    window.location.href = "annotate.php?model=" + encodeURIComponent(slugifyName(raw));
   });
   modelNameEl.addEventListener("change", () => {
     refreshImages().catch(() => setStatus("Failed to list saved images.", "warn"));
