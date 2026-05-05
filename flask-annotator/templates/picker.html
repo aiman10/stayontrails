@@ -1,10 +1,32 @@
 <!doctype html>
-<html><head><meta charset="utf-8"><title>Pick a model</title></head>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Stay On Trails — Pick a model</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
+</head>
 <body>
-<h1>Pick a model</h1>
-<ul>
-  {% for m in models %}
-    <li><a href="/?model={{ m.slug }}">{{ m.slug }}</a> — {{ m.image_count }} images</li>
-  {% endfor %}
-</ul>
-</body></html>
+<header class="topbar">
+  <div class="topbar-inner">
+    <p class="brand">Stay On Trails</p>
+    <nav><ul class="menu"><li><a class="cta" href="#" aria-current="page">Annotate</a></li></ul></nav>
+  </div>
+</header>
+<div class="error-box" style="background:rgba(15,23,42,.84)">
+  <h2 style="color:var(--focus)">Pick a model</h2>
+  {% if models %}
+    <ul style="list-style:none;padding:0;margin:0;text-align:left">
+      {% for m in models %}
+        <li style="padding:8px 0;border-bottom:1px solid var(--line)">
+          <a href="/?model={{ m.slug }}" style="color:#fff;text-decoration:none;font-weight:700">{{ m.slug }}</a>
+          <span style="color:var(--muted);font-size:12px"> — {{ m.image_count }} images
+          {% if m.has_annotations %}· annotated{% endif %}</span>
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p style="color:var(--muted)">No models found in <code>recorded_routes/</code>.</p>
+  {% endif %}
+</div>
+</body>
+</html>

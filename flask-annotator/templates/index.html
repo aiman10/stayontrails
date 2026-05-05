@@ -1,6 +1,100 @@
 <!doctype html>
-<html><head><meta charset="utf-8"><title>Annotate {{ model }}</title></head>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Stay On Trails — Annotate {{ model }}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
+</head>
 <body>
-<h1>Annotate {{ model }}</h1>
-<script>const MODEL = {{ model | tojson }};</script>
-</body></html>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <p class="brand">Stay On Trails</p>
+    <nav aria-label="Main menu">
+      <ul class="menu">
+        <li><a href="http://localhost/stayontrails/index.php">Home</a></li>
+        <li><a href="http://localhost/stayontrails/routes.php">Available routes</a></li>
+        <li><a href="http://localhost/stayontrails/makepath.php">Route builder</a></li>
+        <li><a href="http://localhost/stayontrails/followpath.php">Start route</a></li>
+        <li><a href="http://localhost/stayontrails/remoteHelp.php">Remote assistant</a></li>
+        <li><a href="http://localhost/stayontrails/recordroute.php">Record route</a></li>
+        <li><a class="cta" href="#" aria-current="page">Annotate</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+<div class="page-header">
+  <h1>Annotate</h1>
+  <span class="model-chip">{{ model }}</span>
+  <span id="saveStatus"></span>
+</div>
+
+<div id="banner" class="banner" style="display:none"></div>
+
+<div class="anno-layout">
+
+  <aside class="anno-panel">
+    <div class="panel-head">Images (<span id="imgCount">0</span>)</div>
+    <div class="img-list" id="imgList">
+      <div class="no-images">Loading…</div>
+    </div>
+  </aside>
+
+  <section class="anno-panel">
+    <div class="canvas-wrap" id="canvasWrap">
+      <div id="stage"></div>
+      <div class="canvas-idle" id="canvasIdle">Select an image to begin annotating</div>
+    </div>
+    <div class="canvas-bar">
+      <span id="drawStatus">Polygon mode · Click to add vertices · Double-click to close · Esc to cancel</span>
+      <button class="btn btn-done" id="markDoneBtn" type="button" disabled>Mark Done</button>
+    </div>
+  </section>
+
+  <aside class="anno-panel">
+    <div class="panel-head">Tools</div>
+    <div class="right-inner">
+
+      <div>
+        <div class="sectionTitle" style="margin-bottom:6px">Mode</div>
+        <div class="mode-toolbar">
+          <button class="btn active" id="modePolygon" type="button" title="Polygon (P)">△ Polygon</button>
+          <button class="btn" id="modeBox" type="button" title="Box (B)">▭ Box</button>
+          <button class="btn" id="modeSelect" type="button" title="Select (V)">↖ Select</button>
+        </div>
+      </div>
+
+      <div>
+        <div class="sectionTitle" style="margin-bottom:6px">Classes</div>
+        <div id="classList"></div>
+        <button class="class-add" id="classAddBtn" type="button">+ Add class</button>
+      </div>
+
+      <div style="flex:1;min-height:0;display:flex;flex-direction:column">
+        <div class="sectionTitle" style="margin-bottom:6px">Annotations (<span id="segCount">0</span>)</div>
+        <div class="anno-list" id="annoList"></div>
+      </div>
+
+      <div class="bottom-actions">
+        <button class="btn btn-cyan" id="saveBtn" type="button" disabled>Save</button>
+        <div class="nav-btns">
+          <button class="btn" id="prevBtn" type="button" style="flex:1" disabled>← Prev</button>
+          <button class="btn" id="nextBtn" type="button" style="flex:1" disabled>Next →</button>
+        </div>
+      </div>
+
+    </div>
+  </aside>
+
+</div>
+
+<div id="modalRoot"></div>
+
+<script>window.MODEL = {{ model | tojson }};</script>
+<script src="https://unpkg.com/konva@9.3.16/konva.min.js"></script>
+<script src="{{ url_for('static', filename='js/annotator.js') }}"></script>
+
+</body>
+</html>
