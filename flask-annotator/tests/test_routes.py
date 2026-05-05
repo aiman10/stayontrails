@@ -91,3 +91,23 @@ class TestSaveAnnotationsRoute:
     def test_put_unknown_model_404(self, client):
         r = client.put("/api/models/nope/annotations", json={"model": "nope", "classes": [], "images": []})
         assert r.status_code == 404
+
+
+class TestImageRoute:
+    def test_serves_existing_image(self, client):
+        r = client.get("/img/demo/frame_001.jpg")
+        assert r.status_code == 200
+        # 4-byte placeholder JPEG from the fixture.
+        assert r.data == b"\xff\xd8\xff\xd9"
+
+    def test_unknown_image_404(self, client):
+        r = client.get("/img/demo/missing.jpg")
+        assert r.status_code == 404
+
+    def test_traversal_filename_400(self, client):
+        r = client.get("/img/demo/..%2Fapp.py")
+        assert r.status_code in (400, 404)
+
+    def test_unsafe_extension_400(self, client):
+        r = client.get("/img/demo/foo.txt")
+        assert r.status_code == 400

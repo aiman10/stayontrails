@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from flask import Flask, abort, render_template, request
+from flask import Flask, abort, render_template, request, send_from_directory
 
 import config
 from slug import slugify
@@ -96,6 +96,20 @@ def create_app() -> Flask:
 
         save_annotations(model_dir, body)
         return {"ok": True}
+
+    @app.get("/img/<model>/<filename>")
+    def serve_image(model, filename):
+        from slug import is_safe_filename
+
+        model = slugify(model)
+        if not model:
+            abort(400, description="Invalid model.")
+        model_dir = config.RECORD_ROOT / model
+        if not model_dir.is_dir():
+            abort(404)
+        if not is_safe_filename(filename):
+            abort(400, description="Invalid filename.")
+        return send_from_directory(str(model_dir), filename)
 
     return app
 
