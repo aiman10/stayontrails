@@ -1,0 +1,10 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Pick a model</title></head>
+<body>
+<h1>Pick a model</h1>
+<ul>
+  {% for m in models %}
+    <li><a href="/?model={{ m.slug }}">{{ m.slug }}</a> — {{ m.image_count }} images</li>
+  {% endfor %}
+</ul>
+</body></html>
