@@ -44,6 +44,26 @@ def create_app() -> Flask:
             abort(404, description=f"Model '{model}' not found.")
         return render_template("index.html", model=model)
 
+    @app.get("/api/models/<model>/images")
+    def list_images(model):
+        from annotations import load_annotations
+
+        model = slugify(model)
+        if not model:
+            abort(400, description="Invalid model.")
+        model_dir = config.RECORD_ROOT / model
+        if not model_dir.is_dir():
+            abort(404, description=f"Model '{model}' not found.")
+
+        files = sorted(p.name for p in model_dir.glob("*.jpg"))
+        loaded = load_annotations(model_dir, model)
+        status_by_file = {
+            img["file"]: img.get("status", "unlabeled")
+            for img in loaded["data"].get("images", [])
+        }
+        images = [{"file": f, "status": status_by_file.get(f, "unlabeled")} for f in files]
+        return {"ok": True, "images": images}
+
     return app
 
 
