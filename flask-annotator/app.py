@@ -64,6 +64,39 @@ def create_app() -> Flask:
         images = [{"file": f, "status": status_by_file.get(f, "unlabeled")} for f in files]
         return {"ok": True, "images": images}
 
+    @app.get("/api/models/<model>/annotations")
+    def get_annotations(model):
+        from annotations import load_annotations
+
+        model = slugify(model)
+        if not model:
+            abort(400, description="Invalid model.")
+        model_dir = config.RECORD_ROOT / model
+        if not model_dir.is_dir():
+            abort(404, description=f"Model '{model}' not found.")
+        loaded = load_annotations(model_dir, model)
+        return {"ok": True, "status": loaded["status"], "data": loaded["data"]}
+
+    @app.put("/api/models/<model>/annotations")
+    def put_annotations(model):
+        from annotations import save_annotations
+
+        model = slugify(model)
+        if not model:
+            abort(400, description="Invalid model.")
+        model_dir = config.RECORD_ROOT / model
+        if not model_dir.is_dir():
+            abort(404, description=f"Model '{model}' not found.")
+
+        body = request.get_json(silent=True)
+        if not isinstance(body, dict):
+            abort(400, description="Body must be a JSON object.")
+        if not isinstance(body.get("classes"), list) or not isinstance(body.get("images"), list):
+            abort(400, description="Body must contain `classes` and `images` arrays.")
+
+        save_annotations(model_dir, body)
+        return {"ok": True}
+
     return app
 
 
