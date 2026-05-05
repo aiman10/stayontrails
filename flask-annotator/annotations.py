@@ -103,3 +103,25 @@ def load_annotations(model_dir: Path, model: str) -> LoadResult:
         return {"status": "future", "data": raw}
 
     return {"status": "ok", "data": normalize(raw)}
+
+
+def save_annotations(model_dir: Path, data: dict[str, Any]) -> None:
+    """Atomically write annotations.json into model_dir.
+
+    If an existing file is unreadable JSON, it is moved aside to
+    `annotations.json.broken-<unix-ts>` so the user does not silently
+    overwrite recoverable data.
+    """
+    path = model_dir / "annotations.json"
+
+    # Rotate a corrupt existing file out of the way before writing.
+    if path.is_file():
+        try:
+            json.loads(path.read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, UnicodeDecodeError):
+            backup = model_dir / f"annotations.json.broken-{int(time.time())}"
+            os.replace(str(path), str(backup))
+
+    tmp = path.with_suffix(f".json.tmp.{os.getpid()}")
+    tmp.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
+    os.replace(str(tmp), str(path))

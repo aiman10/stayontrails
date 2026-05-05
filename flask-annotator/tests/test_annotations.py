@@ -114,3 +114,40 @@ class TestLoadAnnotations:
         (tmp_path / "annotations.json").write_text(json.dumps(future))
         out = load_annotations(tmp_path, "demo")
         assert out["status"] == "future"
+
+
+class TestSaveAnnotations:
+    def test_writes_file_atomically(self, tmp_path: Path):
+        from annotations import save_annotations
+        data = {"model": "demo", "schemaVersion": 2, "classes": [], "images": []}
+        save_annotations(tmp_path, data)
+        assert (tmp_path / "annotations.json").is_file()
+        on_disk = json.loads((tmp_path / "annotations.json").read_text())
+        assert on_disk["schemaVersion"] == 2
+
+    def test_no_temp_files_left_behind(self, tmp_path: Path):
+        from annotations import save_annotations
+        save_annotations(tmp_path, {"model": "demo", "schemaVersion": 2, "classes": [], "images": []})
+        leftover = list(tmp_path.glob("annotations.json.tmp.*"))
+        assert leftover == []
+
+    def test_save_rotates_corrupt_file_aside(self, tmp_path: Path):
+        from annotations import save_annotations
+        path = tmp_path / "annotations.json"
+        path.write_text("{ not valid json")
+        save_annotations(tmp_path, {"model": "demo", "schemaVersion": 2, "classes": [], "images": []})
+        # Bad file moved aside.
+        rotated = list(tmp_path.glob("annotations.json.broken-*"))
+        assert len(rotated) == 1
+        # New file written cleanly.
+        on_disk = json.loads(path.read_text())
+        assert on_disk["schemaVersion"] == 2
+
+    def test_save_does_not_rotate_valid_file(self, tmp_path: Path):
+        from annotations import save_annotations
+        path = tmp_path / "annotations.json"
+        existing = {"model": "demo", "schemaVersion": 1, "classes": [], "images": []}
+        path.write_text(json.dumps(existing))
+        save_annotations(tmp_path, {"model": "demo", "schemaVersion": 2, "classes": [], "images": []})
+        rotated = list(tmp_path.glob("annotations.json.broken-*"))
+        assert rotated == []
