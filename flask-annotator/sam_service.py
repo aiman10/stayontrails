@@ -83,3 +83,48 @@ def status() -> dict:
         "device": _device if _predictor is not None else _device_hint(),
         "error": error,
     }
+
+
+def _load_predictor():
+    global _predictor, _device
+    if _predictor is not None:
+        return _predictor
+    import torch
+    from segment_anything import SamPredictor, sam_model_registry
+
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    sam = sam_model_registry[MODEL_TYPE](checkpoint=str(CHECKPOINT_PATH))
+    sam.to(device=device)
+    _predictor = SamPredictor(sam)
+    _device = device
+    return _predictor
+
+
+def _set_image_cached(predictor, image_path: Path) -> None:
+    global _cached_image_key
+    mtime = image_path.stat().st_mtime
+    key = (str(image_path), mtime)
+    if _cached_image_key == key:
+        return
+    from PIL import Image
+    img = np.array(Image.open(image_path).convert("RGB"))
+    predictor.set_image(img)
+    _cached_image_key = key
+
+
+def predict_polygon(image_path: Path, point: tuple[int, int]) -> dict:
+    """Run SAM at a single positive point. Returns {polygon, score}.
+
+    Caller is responsible for path validation. Raises MaskTooSmall if the
+    resulting mask is too small to form a usable polygon.
+    """
+    predictor = _load_predictor()
+    _set_image_cached(predictor, image_path)
+    pt = np.array([[int(point[0]), int(point[1])]], dtype=np.float32)
+    labels = np.array([1], dtype=np.int32)
+    masks, scores, _ = predictor.predict(
+        point_coords=pt, point_labels=labels, multimask_output=True
+    )
+    best = int(np.argmax(scores))
+    polygon = mask_to_polygon(masks[best].astype(np.uint8))
+    return {"polygon": polygon, "score": float(scores[best])}
