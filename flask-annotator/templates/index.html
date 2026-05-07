@@ -46,6 +46,7 @@
     <div class="canvas-wrap" id="canvasWrap">
       <div id="stage"></div>
       <div class="canvas-idle" id="canvasIdle">Select an image to begin annotating</div>
+      <div class="canvas-overlay" id="canvasOverlay" style="display:none">Predicting…</div>
     </div>
     <div class="canvas-bar">
       <span id="drawStatus">Polygon mode · Click to add vertices · Double-click to close · Esc to cancel</span>
@@ -62,6 +63,7 @@
         <div class="mode-toolbar">
           <button class="btn active" id="modePolygon" type="button" title="Polygon (P)">△ Polygon</button>
           <button class="btn" id="modeBox" type="button" title="Box (B)">▭ Box</button>
+          <button class="btn" id="modeSmart" type="button" title="Smart Polygon (S)" disabled>✨ Smart</button>
           <button class="btn" id="modeSelect" type="button" title="Select (V)">↖ Select</button>
         </div>
       </div>

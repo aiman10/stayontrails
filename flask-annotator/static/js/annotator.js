@@ -22,11 +22,13 @@
     classes: [],             // [{id, name, color}]
     currentIndex: -1,
     selectedClass: 0,
-    mode: 'polygon',         // 'polygon' | 'box' | 'select'
+    mode: 'polygon',         // 'polygon' | 'box' | 'select' | 'sam'
     selection: null,         // {type:'segment'|'box', idx:number} | null
     drawing: null,           // current in-progress shape
     dirty: false,
     loadStatus: 'ok',        // 'ok' | 'missing' | 'corrupt' | 'future'
+    samAvailable: false,
+    samError: null,
   };
 
   // ── DOM refs ──────────────────────────────────────────────────────────────
@@ -48,9 +50,11 @@
     markDoneBtn: document.getElementById('markDoneBtn'),
     modePolygon: document.getElementById('modePolygon'),
     modeBox: document.getElementById('modeBox'),
+    modeSmart: document.getElementById('modeSmart'),
     modeSelect: document.getElementById('modeSelect'),
     banner: document.getElementById('banner'),
     modalRoot: document.getElementById('modalRoot'),
+    canvasOverlay: document.getElementById('canvasOverlay'),
   };
 
   // ── Helpers ───────────────────────────────────────────────────────────────
@@ -123,6 +127,27 @@
       el.banner.style.display = 'block';
       el.banner.textContent = 'annotations.json was written by a newer version. Read-only mode.';
       el.saveBtn.disabled = true;
+    }
+  }
+
+  async function loadSamStatus() {
+    try {
+      const d = await api('GET', '/api/sam/status');
+      state.samAvailable = !!d.available;
+      state.samError = d.error || null;
+    } catch (e) {
+      state.samAvailable = false;
+      state.samError = e.message;
+    }
+    el.modeSmart.disabled = !state.samAvailable;
+    if (!state.samAvailable && state.samError) {
+      const msg = 'Smart Polygon disabled: ' + state.samError + '. Manual tools still work.';
+      if (el.banner.style.display === 'block') {
+        el.banner.textContent = el.banner.textContent + ' · ' + msg;
+      } else {
+        el.banner.style.display = 'block';
+        el.banner.textContent = msg;
+      }
     }
   }
 
@@ -606,6 +631,21 @@
       });
     }
 
+    // SAM preview
+    if (state.drawing && state.drawing.type === 'sam') {
+      const d = state.drawing;
+      const col = classColor(d.classId);
+      const flat = [];
+      d.points.forEach(p => flat.push(p.x, p.y));
+      drawLayer.add(new Konva.Line({
+        points: flat, closed: true, stroke: col, strokeWidth: 2,
+        fill: col + '4d', dash: [6, 4],
+      }));
+      d.points.forEach(p => {
+        drawLayer.add(new Konva.Circle({ x: p.x, y: p.y, radius: 3, fill: col }));
+      });
+    }
+
     // In-progress box
     if (state.drawing && state.drawing.type === 'box' && state.drawing.w > 0 && state.drawing.h > 0) {
       const col = classColor(state.drawing.classId);
@@ -661,16 +701,58 @@
     state.drawing = null;
     state.selection = null;
     boxDragStart = null;
-    [el.modePolygon, el.modeBox, el.modeSelect].forEach(b => b.classList.remove('active'));
+    [el.modePolygon, el.modeBox, el.modeSmart, el.modeSelect].forEach(b => b.classList.remove('active'));
     if (m === 'polygon') el.modePolygon.classList.add('active');
     if (m === 'box') el.modeBox.classList.add('active');
+    if (m === 'sam') el.modeSmart.classList.add('active');
     if (m === 'select') el.modeSelect.classList.add('active');
     setDrawStatus(
       m === 'polygon' ? 'Polygon mode · Click to add vertices · Double-click to close · Esc to cancel' :
       m === 'box' ? 'Box mode · Drag to draw a rectangle · Esc to cancel' :
+      m === 'sam' ? 'Smart mode · Click an object · Wait for SAM · Enter to keep, Esc to discard' :
       'Select mode · Click an annotation to edit · Delete to remove'
     );
     redraw();
+  }
+
+  async function runSamAt(p) {
+    el.canvasOverlay.classList.remove('error');
+    el.canvasOverlay.textContent = 'Predicting…';
+    el.canvasOverlay.style.display = 'flex';
+    try {
+      const body = { model: MODEL, image: currentFile(), point: [Math.round(p.x), Math.round(p.y)] };
+      const d = await api('POST', '/api/sam/predict', body);
+      const points = (d.polygon || []).map(([x, y]) => ({ x, y }));
+      if (points.length < 3) throw new Error('polygon too small');
+      state.drawing = { type: 'sam', classId: state.selectedClass, points, score: d.score };
+      setDrawStatus('SAM preview · Enter to keep · Esc to discard · Score ' + (d.score || 0).toFixed(2));
+      el.canvasOverlay.style.display = 'none';
+      redraw();
+    } catch (e) {
+      el.canvasOverlay.classList.add('error');
+      el.canvasOverlay.textContent = 'SAM failed: ' + e.message;
+      setTimeout(() => { el.canvasOverlay.style.display = 'none'; }, 2000);
+    }
+  }
+
+  function commitSamPreview() {
+    const d = state.drawing;
+    if (!d || d.type !== 'sam' || d.points.length < 3) {
+      state.drawing = null; redraw(); return;
+    }
+    const ann = currentAnn();
+    ann.segments.push({
+      id: shortId('s'),
+      classId: d.classId,
+      source: 'sam',
+      points: d.points.map(p => ({ x: Math.round(p.x), y: Math.round(p.y) })),
+    });
+    if (ann.status === 'unlabeled') ann.status = 'in-progress';
+    state.allImages[state.currentIndex].status = ann.status;
+    state.drawing = null;
+    markDirty();
+    renderAnnotationList(); renderImageList(); redraw();
+    setDrawStatus('SAM polygon saved. Click again for another.');
   }
 
   // ── Stage events ───────────────────────────────────────────────────────────
@@ -714,6 +796,11 @@
           return;
         }
         addPolygonVertex(p);
+        return;
+      }
+      if (state.mode === 'sam') {
+        if (state.drawing) return;
+        runSamAt(p);
         return;
       }
       if (state.mode === 'select') {
@@ -762,8 +849,10 @@
       }
     }
     if (e.key === 'Delete' && state.selection) { deleteSelected(); return; }
-    if (e.key === 'Enter' && state.drawing && state.drawing.type === 'polygon') {
-      commitPolygon(); return;
+    if (e.key === 'Enter' && state.drawing) {
+      if (state.drawing.type === 'polygon') commitPolygon();
+      else if (state.drawing.type === 'sam') commitSamPreview();
+      return;
     }
     if (e.key === 'ArrowLeft') { e.preventDefault(); navigateImage(-1); return; }
     if (e.key === 'ArrowRight') { e.preventDefault(); navigateImage(1); return; }
@@ -771,6 +860,11 @@
     if (e.key === 'p' || e.key === 'P') { setMode('polygon'); return; }
     if (e.key === 'b' || e.key === 'B') { setMode('box'); return; }
     if (e.key === 'v' || e.key === 'V') { setMode('select'); return; }
+    if (e.key === 's' || e.key === 'S') {
+      if ((e.ctrlKey || e.metaKey)) return; // Ctrl+S handled below
+      if (state.samAvailable) setMode('sam');
+      return;
+    }
     if (/^[1-9]$/.test(e.key)) {
       const idx = parseInt(e.key, 10) - 1;
       if (state.classes[idx]) { state.selectedClass = state.classes[idx].id; renderClassList(); }
@@ -784,6 +878,7 @@
   // ── Button wiring ─────────────────────────────────────────────────────────
   el.modePolygon.addEventListener('click', () => setMode('polygon'));
   el.modeBox.addEventListener('click', () => setMode('box'));
+  el.modeSmart.addEventListener('click', () => { if (state.samAvailable) setMode('sam'); });
   el.modeSelect.addEventListener('click', () => setMode('select'));
   el.saveBtn.addEventListener('click', () => saveAnnotations(false));
   el.prevBtn.addEventListener('click', () => navigateImage(-1));
@@ -803,6 +898,7 @@
     try {
       await loadAnnotations();
       await loadImageList();
+      await loadSamStatus();
       renderClassList();
       renderAnnotationList();
       updateNavButtons();
