@@ -62,6 +62,50 @@ class TestLoadAnnotations:
         assert len(body["data"]["classes"]) == 4  # path-oxod + grass + puddle + road
 
 
+class TestTrainingStatus:
+    def test_status_blocked_when_not_all_done(self, client):
+        # The fixture's annotations.json has 1 image with status='in-progress'.
+        r = client.get("/api/models/demo/training/status")
+        assert r.status_code == 200
+        body = r.get_json()
+        assert body["ok"] is True
+        assert body["ready"] is False
+        assert body["total"] == 1
+        assert body["done_count"] == 0
+
+    def test_status_unknown_model_404(self, client):
+        r = client.get("/api/models/no-such-model/training/status")
+        assert r.status_code == 404
+
+    def test_start_blocked_when_not_all_done(self, client):
+        r = client.post("/api/models/demo/training/start", json={})
+        assert r.status_code == 400
+        body = r.get_json()
+        assert body["ok"] is False
+        assert "annotated" in body["error"].lower()
+
+    def test_start_503_when_ultralytics_unavailable(self, client, record_root, monkeypatch):
+        # Mark the fixture image as done so the ready gate passes.
+        import json as _json
+        ann_path = record_root / "demo" / "annotations.json"
+        data = _json.loads(ann_path.read_text())
+        data["images"][0]["status"] = "done"
+        ann_path.write_text(_json.dumps(data))
+
+        import training_service
+        monkeypatch.setattr(training_service, "is_available", lambda: (False, "ultralytics not installed"))
+        r = client.post("/api/models/demo/training/start", json={})
+        assert r.status_code == 503
+
+    def test_run_state_404_for_unknown(self, client):
+        r = client.get("/api/models/demo/training/runs/19990101_000000")
+        assert r.status_code == 404
+
+    def test_run_state_400_for_bad_run_id(self, client):
+        r = client.get("/api/models/demo/training/runs/not_a_real_id")
+        assert r.status_code == 400
+
+
 class TestReviewedRoute:
     def test_list_images_includes_reviewed_false_by_default(self, client):
         r = client.get("/api/models/demo/images")
