@@ -66,6 +66,8 @@
     modalRoot: document.getElementById('modalRoot'),
     popupRoot: document.getElementById('popupRoot'),
     canvasOverlay: document.getElementById('canvasOverlay'),
+    imgCount: document.getElementById('imgCount'),
+    rightImgList: document.getElementById('rightImgList'),
     crumbFile: document.getElementById('crumbFile'),
     statusChip: document.getElementById('statusChip'),
     counterCur: document.getElementById('counterCur'),
@@ -219,6 +221,25 @@
     }
   }
 
+  // ── Render: right-panel image list ───────────────────────────────────────
+  function renderRightImageList() {
+    el.imgCount.textContent = state.allImages.length;
+    el.rightImgList.innerHTML = '';
+    state.allImages.forEach((img, i) => {
+      const status = (state.annMap[img.file] && state.annMap[img.file].status) || img.status || 'unlabeled';
+      const row = document.createElement('div');
+      row.className = 'right-img-item' + (i === state.currentIndex ? ' active' : '');
+      row.innerHTML =
+        '<span class="ri-dot ' + status + '"></span>' +
+        '<span class="ri-name" title="' + escapeHTML(img.file) + '">' + escapeHTML(img.file) + '</span>';
+      row.addEventListener('click', () => selectImage(i));
+      el.rightImgList.appendChild(row);
+    });
+    // Scroll active item into view.
+    const active = el.rightImgList.querySelector('.active');
+    if (active) active.scrollIntoView({ block: 'nearest' });
+  }
+
   // ── Render: top nav (counter, crumb, status chip, reviewed btn) ───────────
   function renderNav() {
     const total = state.allImages.length;
@@ -243,6 +264,7 @@
       el.statusChip.className = 'status-chip';
     }
     el.reviewedBtn.classList.toggle('active', f && state.reviewedSet.has(f));
+    renderRightImageList();
   }
 
   // ── Render: class picker ───────────────────────────────────────────────────

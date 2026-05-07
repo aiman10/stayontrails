@@ -101,6 +101,15 @@ a:focus-visible,button:focus-visible{outline:3px solid var(--focus);outline-offs
 .anno-item.selected{border-color:var(--focus);background:rgba(34,211,238,.08)}
 .del-btn{background:none;border:none;color:var(--warn);cursor:pointer;font-size:16px;line-height:1;padding:2px 6px}
 .del-btn:hover{color:#fff}
+.right-img-list{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:2px}
+.right-img-item{display:flex;align-items:center;gap:7px;padding:5px 6px;border-radius:8px;cursor:pointer;font-size:11px;color:var(--muted);border:1px solid transparent;transition:background .1s}
+.right-img-item:hover{background:rgba(255,255,255,.07)}
+.right-img-item.active{background:rgba(34,211,238,.1);border-color:var(--focus);color:#fff}
+.right-img-item .ri-name{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ri-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;background:rgba(255,255,255,.2)}
+.ri-dot.done{background:var(--ok)}
+.ri-dot.in-progress{background:#fbbf24}
+.ri-dot.unlabeled{background:rgba(255,255,255,.2)}
 .bottom-actions{display:flex;flex-direction:column;gap:8px;flex-shrink:0}
 .nav-btns{display:flex;gap:8px}
 .btn-cyan{background:rgba(34,211,238,.12);color:var(--focus);border-color:rgba(34,211,238,.35)}
