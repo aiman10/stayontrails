@@ -41,3 +41,45 @@ def mask_to_polygon(mask: np.ndarray, max_vertices: int = 100) -> list[list[int]
     if len(pts) > max_vertices:
         pts = pts[:max_vertices]
     return [[int(round(x)), int(round(y))] for x, y in pts]
+
+
+_predictor = None
+_cached_image_key: tuple | None = None
+_device: str = "cpu"
+
+
+def is_available() -> tuple[bool, str | None]:
+    """Return (available, error_string).
+
+    Available iff torch + segment_anything import and the checkpoint exists.
+    Not memoized — installing deps mid-session is reflected immediately.
+    """
+    try:
+        import torch  # noqa: F401
+    except Exception as e:
+        return False, f"torch not installed ({e.__class__.__name__})"
+    try:
+        import segment_anything  # noqa: F401
+    except Exception as e:
+        return False, f"segment_anything not installed ({e.__class__.__name__})"
+    if not CHECKPOINT_PATH.is_file():
+        return False, f"checkpoint missing at {CHECKPOINT_PATH}"
+    return True, None
+
+
+def _device_hint() -> str:
+    try:
+        import torch
+        return "cuda" if torch.cuda.is_available() else "cpu"
+    except Exception:
+        return "cpu"
+
+
+def status() -> dict:
+    available, error = is_available()
+    return {
+        "available": available,
+        "loaded": _predictor is not None,
+        "device": _device if _predictor is not None else _device_hint(),
+        "error": error,
+    }

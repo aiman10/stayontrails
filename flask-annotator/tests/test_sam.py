@@ -1,6 +1,7 @@
 import numpy as np
 import pytest
 
+import sam_service
 from sam_service import MaskTooSmall, mask_to_polygon
 
 
@@ -30,3 +31,17 @@ def test_mask_to_polygon_caps_vertices():
     poly = mask_to_polygon(mask, max_vertices=50)
     assert len(poly) <= 50
     assert len(poly) >= 6
+
+
+def test_is_available_returns_tuple():
+    available, error = sam_service.is_available()
+    assert isinstance(available, bool)
+    assert error is None or isinstance(error, str)
+
+
+def test_status_shape():
+    s = sam_service.status()
+    assert set(s.keys()) == {"available", "loaded", "device", "error"}
+    assert isinstance(s["available"], bool)
+    assert isinstance(s["loaded"], bool)
+    assert isinstance(s["device"], str)
