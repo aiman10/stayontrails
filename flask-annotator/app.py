@@ -111,6 +111,59 @@ def create_app() -> Flask:
             abort(400, description="Invalid filename.")
         return send_from_directory(str(model_dir), filename)
 
+    @app.get("/api/sam/status")
+    def sam_status():
+        import sam_service
+
+        s = sam_service.status()
+        return {"ok": True, **s}
+
+    @app.post("/api/sam/predict")
+    def sam_predict():
+        import sam_service
+        from slug import is_safe_filename
+
+        body = request.get_json(silent=True)
+        if not isinstance(body, dict):
+            abort(400, description="Body must be a JSON object.")
+
+        model = slugify(body.get("model", ""))
+        if not model:
+            abort(400, description="Invalid model.")
+        model_dir = config.RECORD_ROOT / model
+        if not model_dir.is_dir():
+            abort(404, description=f"Model '{model}' not found.")
+
+        filename = body.get("image", "")
+        if not isinstance(filename, str) or not is_safe_filename(filename):
+            abort(400, description="Invalid filename.")
+        image_path = model_dir / filename
+        if not image_path.is_file():
+            abort(404, description="Image not found.")
+
+        point = body.get("point")
+        if (
+            not isinstance(point, list) or len(point) != 2
+            or not all(isinstance(v, (int, float)) and not isinstance(v, bool) for v in point)
+        ):
+            abort(400, description="point must be [x, y].")
+        x, y = int(point[0]), int(point[1])
+        if not (0 <= x < 640 and 0 <= y < 480):
+            abort(400, description="point out of image bounds.")
+
+        available, error = sam_service.is_available()
+        if not available:
+            return {"ok": False, "error": error}, 503
+
+        try:
+            result = sam_service.predict_polygon(image_path, (x, y))
+        except sam_service.MaskTooSmall as e:
+            return {"ok": False, "error": str(e)}, 500
+        except Exception as e:
+            return {"ok": False, "error": f"{e.__class__.__name__}: {e}"}, 500
+
+        return {"ok": True, **result}
+
     return app
 
 
