@@ -34,6 +34,17 @@ Run before each commit that touches frontend code, and after merging branches.
 - [ ] D / Mark Done flips status to done (green badge).
 - [ ] Arrow keys move prev/next.
 
+## Smart Polygon (SAM)
+- [ ] On a fresh page load, `GET /api/sam/status` returns `{available: true, device: "cuda"}` (or `cpu`). Smart button is enabled.
+- [ ] If SAM dependencies missing, banner reads "Smart Polygon disabled: …" and Smart button is disabled.
+- [ ] **S** key activates Smart mode; status bar updates.
+- [ ] Click on a path in the image — overlay shows "Predicting…" — within ~1 s the dashed preview polygon appears.
+- [ ] Repeated clicks on the same image are noticeably faster (embedding cache hit).
+- [ ] Switching to a different image and clicking re-loads the embedding (slight delay).
+- [ ] **Enter** commits the SAM polygon. The annotation list shows it; the JSON `segments` entry has `source: "sam"`.
+- [ ] **Esc** discards the preview cleanly.
+- [ ] Click in a featureless spot → SAM may return a tiny mask → overlay shows "SAM failed: …" briefly, no preview committed.
+
 ## Bad data paths
 - [ ] Corrupt `annotations.json`: app shows yellow banner, doesn't crash; first save rotates the bad file aside.
 - [ ] Unknown model in URL: 404 page (matches PHP error look).
