@@ -1209,6 +1209,8 @@
       renderSidebar();
       renderTags();
       renderNav();
+      // Auto-select the first image so the canvas isn't blank on load.
+      if (state.allImages.length > 0) selectImage(0);
     } catch (e) {
       setSaveStatus('Load error: ' + e.message, 'warn');
     }
