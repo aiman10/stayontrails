@@ -47,7 +47,7 @@ class TestLoadAnnotations:
         body = r.get_json()
         assert body["ok"] is True
         assert body["data"]["schemaVersion"] == 2
-        assert body["data"]["classes"][0]["color"] == "#22d3ee"
+        assert body["data"]["classes"][0]["color"] == "#7C3AED"
         assert body["data"]["images"][0]["annotations"]["boxes"] == []
         assert body["status"] == "ok"
 
@@ -59,7 +59,7 @@ class TestLoadAnnotations:
         body = r.get_json()
         assert body["status"] == "missing"
         assert body["data"]["model"] == "demo"
-        assert len(body["data"]["classes"]) == 2  # path + path-oxod
+        assert len(body["data"]["classes"]) == 4  # path-oxod + grass + puddle + road
 
 
 class TestSaveAnnotationsRoute:

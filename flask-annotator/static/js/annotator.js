@@ -12,7 +12,8 @@
   const IMG_BASE = '/img/' + MODEL + '/';
 
   // ── Constants ──────────────────────────────────────────────────────────────
-  const PALETTE = ['#22d3ee', '#facc15', '#f472b6', '#34d399', '#fb7185', '#a78bfa'];
+  // Fixed palette: 0 path-oxod, 1 grass, 2 puddle, 3 road. Extras for added classes.
+  const PALETTE = ['#7C3AED', '#06D6A0', '#F4A261', '#EF476F', '#22d3ee', '#facc15'];
   const IMG_W = 640, IMG_H = 480;
 
   // ── State ─────────────────────────────────────────────────────────────────

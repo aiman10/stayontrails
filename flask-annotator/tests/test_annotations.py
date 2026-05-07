@@ -68,10 +68,10 @@ class TestNormalize:
 
 
 class TestDefaultScaffold:
-    def test_has_path_and_path_oxod_classes(self):
+    def test_has_default_four_classes(self):
         s = default_scaffold("demo")
         names = [c["name"] for c in s["classes"]]
-        assert names == ["path", "path-oxod"]
+        assert names == ["path-oxod", "grass", "puddle", "road"]
 
     def test_has_v2_schema_version(self):
         s = default_scaffold("demo")

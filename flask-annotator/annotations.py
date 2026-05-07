@@ -19,12 +19,19 @@ from typing import Any, Literal, TypedDict
 SCHEMA_VERSION = 2
 
 DEFAULT_PALETTE: list[str] = [
-    "#22d3ee",  # cyan
-    "#facc15",  # yellow
-    "#f472b6",  # pink
-    "#34d399",  # green
-    "#fb7185",  # red
-    "#a78bfa",  # purple
+    "#7C3AED",  # purple — path-oxod
+    "#06D6A0",  # cyan/mint — grass
+    "#F4A261",  # orange — puddle
+    "#EF476F",  # red/pink — road
+    "#22d3ee",  # extra cyan
+    "#facc15",  # extra yellow
+]
+
+DEFAULT_CLASSES: list[dict[str, Any]] = [
+    {"id": 0, "name": "path-oxod", "color": "#7C3AED"},
+    {"id": 1, "name": "grass",     "color": "#06D6A0"},
+    {"id": 2, "name": "puddle",    "color": "#F4A261"},
+    {"id": 3, "name": "road",      "color": "#EF476F"},
 ]
 
 
@@ -34,14 +41,11 @@ class LoadResult(TypedDict):
 
 
 def default_scaffold(model: str) -> dict[str, Any]:
-    """A blank v2 annotations.json with the two default classes."""
+    """A blank v2 annotations.json with the four default classes."""
     return {
         "model": model,
         "schemaVersion": SCHEMA_VERSION,
-        "classes": [
-            {"id": 0, "name": "path", "color": DEFAULT_PALETTE[0]},
-            {"id": 1, "name": "path-oxod", "color": DEFAULT_PALETTE[1]},
-        ],
+        "classes": [dict(c) for c in DEFAULT_CLASSES],
         "images": [],
     }
 
