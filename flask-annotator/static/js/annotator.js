@@ -397,8 +397,9 @@
   }
 
   // ── Konva stage ───────────────────────────────────────────────────────────
-  let stage = null, imgLayer = null, annLayer = null, drawLayer = null;
+  let stage = null, imgLayer = null, annLayer = null, drawLayer = null, cursorLayer = null;
   let konvaImage = null;
+  let crosshairV = null, crosshairH = null;
 
   function initStage() {
     const rect = el.canvasWrap.getBoundingClientRect();
@@ -410,9 +411,30 @@
     imgLayer = new Konva.Layer();
     annLayer = new Konva.Layer();
     drawLayer = new Konva.Layer();
-    stage.add(imgLayer); stage.add(annLayer); stage.add(drawLayer);
+    cursorLayer = new Konva.Layer({ listening: false });
+    stage.add(imgLayer); stage.add(annLayer); stage.add(drawLayer); stage.add(cursorLayer);
+
+    // Crosshair lines — drawn in stage (unscaled) space so they always span
+    // the full canvas regardless of image letterboxing.
+    crosshairV = new Konva.Line({ stroke: '#888', strokeWidth: 1, dash: [8, 4], visible: false });
+    crosshairH = new Konva.Line({ stroke: '#888', strokeWidth: 1, dash: [8, 4], visible: false });
+    cursorLayer.add(crosshairV); cursorLayer.add(crosshairH);
 
     new ResizeObserver(resizeStage).observe(el.canvasWrap);
+  }
+
+  function updateCrosshair() {
+    const pos = stage.getPointerPosition();
+    if (!pos) { hideCrosshair(); return; }
+    crosshairV.points([pos.x, 0, pos.x, stage.height()]);
+    crosshairH.points([0, pos.y, stage.width(), pos.y]);
+    crosshairV.visible(true); crosshairH.visible(true);
+    cursorLayer.batchDraw();
+  }
+  function hideCrosshair() {
+    if (!crosshairV) return;
+    crosshairV.visible(false); crosshairH.visible(false);
+    cursorLayer.batchDraw();
   }
 
   function resizeStage() {
@@ -434,6 +456,8 @@
       layer.scale({ x: scale, y: scale });
       layer.position({ x: dx, y: dy });
     });
+    // cursorLayer stays in stage space (no scale/offset) so the crosshair
+    // covers the whole canvas, not just the image rect.
   }
 
   function loadImageInto(file) {
@@ -557,25 +581,29 @@
       const flat = [];
       seg.points.forEach(p => { flat.push(p.x, p.y); });
       const isSelected = state.selection && state.selection.type === 'segment' && state.selection.idx === i;
+      // Fill alpha: 0x40 (~0.25) normal, 0x66 (~0.4) when selected.
       const line = new Konva.Line({
         points: flat, closed: true, stroke: col, strokeWidth: isSelected ? 3 : 2,
-        fill: col + '4d', name: 'segment', listening: state.mode === 'select',
+        fill: col + (isSelected ? '66' : '40'),
+        name: 'segment', listening: state.mode === 'select',
       });
       line.on('click', () => { state.selection = { type: 'segment', idx: i }; renderAnnotationList(); redraw(); });
       annLayer.add(line);
       if (isSelected && state.mode === 'select') {
         seg.points.forEach((pt, vi) => {
-          const dot = new Konva.Circle({
-            x: pt.x, y: pt.y, radius: 5, fill: '#fff', stroke: col, strokeWidth: 2,
+          // 8x8 white square handle, centered on the vertex.
+          const handle = new Konva.Rect({
+            x: pt.x - 4, y: pt.y - 4, width: 8, height: 8,
+            fill: '#fff', stroke: '#222', strokeWidth: 1,
             draggable: true,
           });
-          dot.on('dragmove', () => {
-            seg.points[vi] = { x: Math.round(dot.x()), y: Math.round(dot.y()) };
+          handle.on('dragmove', () => {
+            seg.points[vi] = { x: Math.round(handle.x() + 4), y: Math.round(handle.y() + 4) };
             line.points([].concat(...seg.points.map(p => [p.x, p.y])));
             markDirty();
           });
-          dot.on('dragend', () => { renderAnnotationList(); });
-          annLayer.add(dot);
+          handle.on('dragend', () => { renderAnnotationList(); });
+          annLayer.add(handle);
         });
       }
     });
@@ -767,11 +795,15 @@
     });
 
     stage.on('mousemove touchmove', () => {
+      updateCrosshair();
       if (state.mode !== 'box' || !boxDragStart) return;
       const p = imageCoordsFromEvent();
       if (!p) return;
       updateBoxDrag(p);
     });
+
+    stage.on('mouseleave', hideCrosshair);
+    stage.on('mouseenter', updateCrosshair);
 
     stage.on('mouseup touchend', () => {
       if (state.mode !== 'box') return;
