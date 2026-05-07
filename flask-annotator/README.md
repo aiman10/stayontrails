@@ -26,15 +26,20 @@ object under the cursor. Without this, the rest of the tool works normally —
 the Smart button stays disabled and a banner explains why.
 
 ```bash
-# 1. Install GPU PyTorch (Windows + CUDA 12.1)
-pip install torch --index-url https://download.pytorch.org/whl/cu121
+# 1. Install GPU PyTorch + torchvision. Use the index that matches your CUDA driver
+#    (`nvidia-smi` shows the version). Python 3.13 needs cu124 or newer — the cu121
+#    index only ships wheels up to Python 3.12.
+py -3 -m pip install torch torchvision --index-url https://download.pytorch.org/whl/cu124
 
 # 2. Install Meta's segment-anything package
-pip install git+https://github.com/facebookresearch/segment-anything.git
+py -3 -m pip install git+https://github.com/facebookresearch/segment-anything.git
 
 # 3. Download the vit_b checkpoint (~375 MB) into flask-annotator/models/sam/
-python scripts/download_sam.py
+py -3 scripts/download_sam.py
 ```
+
+> **Note:** `segment-anything` imports `torchvision` at module load. If you skip it,
+> the Flask banner reads "torchvision not installed" and the Smart button stays disabled.
 
 Restart the Flask server. The Smart button (✨, **S** key) becomes enabled
 once `/api/sam/status` reports `available: true`.
