@@ -25,20 +25,61 @@
   </div>
 </header>
 
-<div class="page-header">
-  <h1>Annotate</h1>
-  <span class="model-chip">{{ model }}</span>
-  <span id="saveStatus"></span>
+<div class="nav-row">
+  <div class="crumbs">
+    <span class="crumb-up">STAY ON TRAILS</span>
+    <span class="crumb-sep">›</span>
+    <span class="crumb-up">ANNOTATE</span>
+    <span class="crumb-sep">›</span>
+    <span class="crumb-current" id="crumbFile">—</span>
+    <span class="status-chip" id="statusChip"></span>
+  </div>
+  <div class="counter">
+    <button class="ico-btn" id="prevBtn" type="button" title="Previous (←)" disabled>‹</button>
+    <span class="counter-text"><span id="counterCur">0</span> / <span id="counterTot">0</span></span>
+    <button class="ico-btn" id="nextBtn" type="button" title="Next (→)" disabled>›</button>
+  </div>
+  <div class="nav-actions">
+    <span id="saveStatus"></span>
+    <button class="btn btn-cyan" id="saveBtn" type="button" disabled>Save</button>
+    <button class="check-btn" id="reviewedBtn" type="button" title="Mark reviewed" disabled>✓</button>
+  </div>
 </div>
 
 <div id="banner" class="banner" style="display:none"></div>
 
 <div class="anno-layout">
 
-  <aside class="anno-panel">
-    <div class="panel-head">Images (<span id="imgCount">0</span>)</div>
-    <div class="img-list" id="imgList">
-      <div class="no-images">Loading…</div>
+  <aside class="anno-panel sidebar">
+    <div class="sidebar-head">
+      <div class="sidebar-title">Annotations (<span id="segCount">0</span>)</div>
+      <div class="sidebar-sub">Group: <span id="groupName">default</span></div>
+    </div>
+
+    <div class="tabs">
+      <button class="tab active" data-tab="classes" type="button">Classes</button>
+      <button class="tab" data-tab="layers" type="button">Layers</button>
+    </div>
+
+    <div class="tab-body" id="tabBody"></div>
+
+    <div class="sidebar-section">
+      <div class="sectionTitle">Unused classes</div>
+      <div id="unusedList"></div>
+    </div>
+
+    <div class="sidebar-section">
+      <button class="ai-btn" id="findAiBtn" type="button">✨ Find Objects with AI</button>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sectionTitle">Tags</div>
+      <div id="tagsBox" class="tags-box">
+        <div class="tags-empty">No Tags Applied</div>
+        <div class="tags-list" id="tagsList"></div>
+        <input type="text" class="tags-input" id="tagsInput"
+               placeholder="Type and select tags below to add them to the image." />
+      </div>
     </div>
   </aside>
 
@@ -74,25 +115,13 @@
         <button class="class-add" id="classAddBtn" type="button">+ Add class</button>
       </div>
 
-      <div style="flex:1;min-height:0;display:flex;flex-direction:column">
-        <div class="sectionTitle" style="margin-bottom:6px">Annotations (<span id="segCount">0</span>)</div>
-        <div class="anno-list" id="annoList"></div>
-      </div>
-
-      <div class="bottom-actions">
-        <button class="btn btn-cyan" id="saveBtn" type="button" disabled>Save</button>
-        <div class="nav-btns">
-          <button class="btn" id="prevBtn" type="button" style="flex:1" disabled>← Prev</button>
-          <button class="btn" id="nextBtn" type="button" style="flex:1" disabled>Next →</button>
-        </div>
-      </div>
-
     </div>
   </aside>
 
 </div>
 
 <div id="modalRoot"></div>
+<div id="popupRoot"></div>
 
 <script>window.MODEL = {{ model | tojson }};</script>
 <script src="https://unpkg.com/konva@9.3.16/konva.min.js"></script>
