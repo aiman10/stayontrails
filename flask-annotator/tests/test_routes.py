@@ -62,6 +62,63 @@ class TestLoadAnnotations:
         assert len(body["data"]["classes"]) == 4  # path-oxod + grass + puddle + road
 
 
+class TestReviewedRoute:
+    def test_list_images_includes_reviewed_false_by_default(self, client):
+        r = client.get("/api/models/demo/images")
+        assert r.status_code == 200
+        body = r.get_json()
+        for img in body["images"]:
+            assert img["reviewed"] is False
+
+    def test_post_reviewed_marks_image(self, client, record_root):
+        r = client.post(
+            "/api/models/demo/images/frame_001.jpg/reviewed",
+            json={"reviewed": True},
+        )
+        assert r.status_code == 200
+        assert r.get_json() == {"ok": True, "reviewed": True}
+        # Persisted to disk.
+        import json as _json
+        on_disk = _json.loads((record_root / "demo" / "reviewed.json").read_text())
+        assert on_disk == ["frame_001.jpg"]
+
+    def test_post_reviewed_unmarks_image(self, client, record_root):
+        client.post("/api/models/demo/images/frame_001.jpg/reviewed", json={"reviewed": True})
+        r = client.post(
+            "/api/models/demo/images/frame_001.jpg/reviewed",
+            json={"reviewed": False},
+        )
+        assert r.status_code == 200
+        assert r.get_json() == {"ok": True, "reviewed": False}
+
+    def test_post_reviewed_default_is_true(self, client):
+        r = client.post("/api/models/demo/images/frame_001.jpg/reviewed", json={})
+        assert r.status_code == 200
+        assert r.get_json()["reviewed"] is True
+
+    def test_post_reviewed_404_unknown_image(self, client):
+        r = client.post(
+            "/api/models/demo/images/frame_999.jpg/reviewed",
+            json={"reviewed": True},
+        )
+        assert r.status_code == 404
+
+    def test_post_reviewed_400_unsafe_filename(self, client):
+        r = client.post(
+            "/api/models/demo/images/..%2Fpasswd/reviewed",
+            json={"reviewed": True},
+        )
+        assert r.status_code in (400, 404)  # werkzeug may 404 on bad path, that's fine
+
+    def test_list_images_reflects_reviewed_state(self, client):
+        client.post("/api/models/demo/images/frame_001.jpg/reviewed", json={"reviewed": True})
+        r = client.get("/api/models/demo/images")
+        body = r.get_json()
+        states = {img["file"]: img["reviewed"] for img in body["images"]}
+        assert states["frame_001.jpg"] is True
+        assert states["frame_002.jpg"] is False
+
+
 class TestSaveAnnotationsRoute:
     def test_put_writes_file_and_returns_ok(self, client, record_root):
         payload = {

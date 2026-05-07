@@ -47,6 +47,7 @@ def create_app() -> Flask:
     @app.get("/api/models/<model>/images")
     def list_images(model):
         from annotations import load_annotations
+        from reviewed import load_reviewed
 
         model = slugify(model)
         if not model:
@@ -61,7 +62,15 @@ def create_app() -> Flask:
             img["file"]: img.get("status", "unlabeled")
             for img in loaded["data"].get("images", [])
         }
-        images = [{"file": f, "status": status_by_file.get(f, "unlabeled")} for f in files]
+        reviewed_set = load_reviewed(model_dir)
+        images = [
+            {
+                "file": f,
+                "status": status_by_file.get(f, "unlabeled"),
+                "reviewed": f in reviewed_set,
+            }
+            for f in files
+        ]
         return {"ok": True, "images": images}
 
     @app.get("/api/models/<model>/annotations")
@@ -110,6 +119,27 @@ def create_app() -> Flask:
         if not is_safe_filename(filename):
             abort(400, description="Invalid filename.")
         return send_from_directory(str(model_dir), filename)
+
+    @app.post("/api/models/<model>/images/<filename>/reviewed")
+    def toggle_reviewed(model, filename):
+        from reviewed import set_reviewed
+        from slug import is_safe_filename
+
+        model = slugify(model)
+        if not model:
+            abort(400, description="Invalid model.")
+        model_dir = config.RECORD_ROOT / model
+        if not model_dir.is_dir():
+            abort(404, description=f"Model '{model}' not found.")
+        if not is_safe_filename(filename):
+            abort(400, description="Invalid filename.")
+        if not (model_dir / filename).is_file():
+            abort(404, description="Image not found.")
+
+        body = request.get_json(silent=True) or {}
+        value = bool(body.get("reviewed", True))
+        new_state = set_reviewed(model_dir, filename, value)
+        return {"ok": True, "reviewed": new_state}
 
     @app.get("/api/sam/status")
     def sam_status():
