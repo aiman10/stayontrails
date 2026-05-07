@@ -13,3 +13,9 @@ flask-annotator/.idea/modules.xml
 flask-annotator/.idea/misc.xml
 flask-annotator/.idea/inspectionProfiles/profiles_settings.xml
 flask-annotator/.idea/flask-annotator.iml
+# Phase 4 training artefacts (heavy, machine-specific)
+flask-annotator/runs/
+flask-annotator/_datasets/
+flask-annotator/models/
+# Ultralytics drops yolov8n-seg.pt etc. into the cwd on first run
+yolo*.pt

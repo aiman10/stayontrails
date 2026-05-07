@@ -45,6 +45,16 @@ Run before each commit that touches frontend code, and after merging branches.
 - [ ] **Esc** discards the preview cleanly.
 - [ ] Click in a featureless spot → SAM may return a tiny mask → overlay shows "SAM failed: …" briefly, no preview committed.
 
+## Training (YOLO)
+- [ ] With at least one image not yet 'done', the Start Training button is disabled and the status reads "Annotate N more image(s)…".
+- [ ] If `ultralytics` isn't installed, the status reads "Training disabled: ultralytics not installed".
+- [ ] After marking the last image done, the gate flips: status turns green "Ready · N / N images done" and the button becomes clickable.
+- [ ] Click Start Training: status switches to "Starting…" then "Training… epoch 1 / 50". Polls every ~3 s. `flask-annotator/runs/<model>/<run_id>/` is created with `state.json` and `train.log`.
+- [ ] When training finishes, status turns green with a "download best.pt" link. The link downloads the file.
+- [ ] `annotations.json` now contains a top-level `splits: { train: [...], val: [...] }`.
+- [ ] If the user reloads mid-training, the page resumes polling the same run.
+- [ ] If the run fails (forced by deleting `data.yaml` mid-run), status reads "Last run failed: …".
+
 ## Bad data paths
 - [ ] Corrupt `annotations.json`: app shows yellow banner, doesn't crash; first save rotates the bad file aside.
 - [ ] Unknown model in URL: 404 page (matches PHP error look).

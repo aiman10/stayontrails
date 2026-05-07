@@ -43,3 +43,28 @@ py -3 scripts/download_sam.py
 
 Restart the Flask server. The Smart button (✨, **S** key) becomes enabled
 once `/api/sam/status` reports `available: true`.
+
+## Training (YOLO segmentation, optional)
+
+The right panel has a **Start Training** button that's disabled until every
+image has status `done`. Once enabled it exports the dataset, persists the
+train/val split into `annotations.json`, and spawns Ultralytics training in
+a background subprocess. Progress polls every 3 s; finished runs expose a
+download link to `best.pt`.
+
+```bash
+# 1. Same torch install as for SAM (skip if already done)
+py -3 -m pip install torch torchvision --index-url https://download.pytorch.org/whl/cu124
+
+# 2. Ultralytics
+py -3 -m pip install ultralytics
+```
+
+Run output lives in `flask-annotator/runs/<model>/<run_id>/`:
+
+- `state.json` — live status, current epoch, error if any
+- `train.log` — full subprocess stdout/stderr
+- `best.pt` — copied here after a successful run
+
+Datasets are staged at `flask-annotator/_datasets/<model>/`. Both folders
+are gitignored.
