@@ -45,3 +45,86 @@ def test_status_shape():
     assert isinstance(s["available"], bool)
     assert isinstance(s["loaded"], bool)
     assert isinstance(s["device"], str)
+
+
+def test_status_endpoint_shape(client):
+    r = client.get("/api/sam/status")
+    assert r.status_code == 200
+    body = r.get_json()
+    assert body["ok"] is True
+    assert "available" in body
+    assert "loaded" in body
+    assert "device" in body
+
+
+def test_predict_rejects_bad_body(client):
+    r = client.post("/api/sam/predict", json="not a dict")
+    assert r.status_code == 400
+
+
+def test_predict_rejects_bad_model(client):
+    r = client.post(
+        "/api/sam/predict",
+        json={"model": "", "image": "frame_001.jpg", "point": [10, 10]},
+    )
+    assert r.status_code == 400
+
+
+def test_predict_rejects_unsafe_filename(client):
+    r = client.post(
+        "/api/sam/predict",
+        json={"model": "demo", "image": "../etc/passwd", "point": [10, 10]},
+    )
+    assert r.status_code == 400
+
+
+def test_predict_rejects_point_out_of_bounds(client):
+    r = client.post(
+        "/api/sam/predict",
+        json={"model": "demo", "image": "frame_001.jpg", "point": [700, 10]},
+    )
+    assert r.status_code == 400
+
+
+def test_predict_404_unknown_model(client):
+    r = client.post(
+        "/api/sam/predict",
+        json={"model": "no-such-model", "image": "frame_001.jpg", "point": [10, 10]},
+    )
+    assert r.status_code == 404
+
+
+def test_predict_404_unknown_image(client):
+    r = client.post(
+        "/api/sam/predict",
+        json={"model": "demo", "image": "frame_999.jpg", "point": [10, 10]},
+    )
+    assert r.status_code == 404
+
+
+def test_predict_503_when_unavailable(client, monkeypatch):
+    monkeypatch.setattr(sam_service, "is_available", lambda: (False, "torch not installed"))
+    r = client.post(
+        "/api/sam/predict",
+        json={"model": "demo", "image": "frame_001.jpg", "point": [10, 10]},
+    )
+    assert r.status_code == 503
+    assert r.get_json()["error"] == "torch not installed"
+
+
+def test_predict_returns_polygon_when_mocked(client, monkeypatch):
+    monkeypatch.setattr(sam_service, "is_available", lambda: (True, None))
+    monkeypatch.setattr(
+        sam_service,
+        "predict_polygon",
+        lambda path, pt: {"polygon": [[10, 10], [30, 10], [30, 30], [10, 30]], "score": 0.9},
+    )
+    r = client.post(
+        "/api/sam/predict",
+        json={"model": "demo", "image": "frame_001.jpg", "point": [20, 20]},
+    )
+    assert r.status_code == 200
+    body = r.get_json()
+    assert body["ok"] is True
+    assert body["polygon"] == [[10, 10], [30, 10], [30, 30], [10, 30]]
+    assert body["score"] == 0.9
