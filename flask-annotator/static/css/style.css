@@ -110,6 +110,14 @@ a:focus-visible,button:focus-visible{outline:3px solid var(--focus);outline-offs
 .ri-dot.done{background:var(--ok)}
 .ri-dot.in-progress{background:#fbbf24}
 .ri-dot.unlabeled{background:rgba(255,255,255,.2)}
+.training-box{flex-shrink:0;padding:10px;border-top:1px solid var(--line);display:flex;flex-direction:column;gap:6px}
+.training-status{font-size:11px;color:var(--muted);min-height:14px;line-height:1.4}
+.training-status.ready{color:var(--ok)}
+.training-status.warn{color:var(--warn)}
+.training-status.running{color:var(--accent)}
+.train-btn{background:linear-gradient(180deg,rgba(34,211,238,.25),rgba(34,211,238,.1));border-color:rgba(34,211,238,.4);color:var(--focus);font-size:12px}
+.train-btn:hover:not(:disabled){background:linear-gradient(180deg,rgba(34,211,238,.4),rgba(34,211,238,.18))}
+.train-btn.done{background:rgba(52,211,153,.2);border-color:var(--ok);color:var(--ok)}
 .bottom-actions{display:flex;flex-direction:column;gap:8px;flex-shrink:0}
 .nav-btns{display:flex;gap:8px}
 .btn-cyan{background:rgba(34,211,238,.12);color:var(--focus);border-color:rgba(34,211,238,.35)}

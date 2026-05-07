@@ -30,6 +30,8 @@
     loadStatus: 'ok',        // 'ok' | 'missing' | 'corrupt' | 'future'
     samAvailable: false,
     samError: null,
+    training: { ready: false, doneCount: 0, total: 0, available: false, error: null, latestRun: null },
+    trainingPollTimer: null,
     tab: 'classes',                // 'classes' | 'layers'
     layerVisibility: {},           // regionId -> bool (true = visible)
     classFilter: null,             // when set in classes tab: highlight only this class id
@@ -68,6 +70,8 @@
     canvasOverlay: document.getElementById('canvasOverlay'),
     imgCount: document.getElementById('imgCount'),
     rightImgList: document.getElementById('rightImgList'),
+    trainBtn: document.getElementById('trainBtn'),
+    trainingStatus: document.getElementById('trainingStatus'),
     crumbFile: document.getElementById('crumbFile'),
     statusChip: document.getElementById('statusChip'),
     counterCur: document.getElementById('counterCur'),
@@ -146,6 +150,103 @@
       el.banner.textContent = 'annotations.json was written by a newer version. Read-only mode.';
       el.saveBtn.disabled = true;
     }
+  }
+
+  // ── Training status + start ────────────────────────────────────────────────
+  async function loadTrainingStatus() {
+    try {
+      const d = await api('GET', '/api/models/' + encodeURIComponent(MODEL) + '/training/status');
+      state.training = {
+        ready: d.ready, doneCount: d.done_count, total: d.total,
+        available: d.available, error: d.error, latestRun: d.latest_run,
+      };
+    } catch (e) {
+      state.training = { ready: false, doneCount: 0, total: 0, available: false, error: e.message, latestRun: null };
+    }
+    renderTraining();
+    // If a previous run is still running, resume polling.
+    const r = state.training.latestRun;
+    if (r && (r.status === 'running' || r.status === 'starting')) {
+      pollRun(r.run_id);
+    }
+  }
+
+  function renderTraining() {
+    const t = state.training;
+    const r = t.latestRun;
+    const btn = el.trainBtn;
+    btn.classList.remove('done');
+    el.trainingStatus.className = 'training-status';
+
+    // Active run takes priority over readiness.
+    if (r && (r.status === 'running' || r.status === 'starting')) {
+      const cur = r.epoch_current || 0;
+      const tot = r.epoch_total || r.epochs || 0;
+      el.trainingStatus.textContent = 'Training… epoch ' + cur + ' / ' + tot;
+      el.trainingStatus.classList.add('running');
+      btn.disabled = true;
+      btn.textContent = 'Training…';
+      return;
+    }
+    if (r && r.status === 'failed') {
+      el.trainingStatus.textContent = 'Last run failed: ' + (r.error || 'unknown');
+      el.trainingStatus.classList.add('warn');
+    } else if (r && r.status === 'done' && r.best_pt) {
+      el.trainingStatus.innerHTML = 'Last run done · <a href="/api/models/' +
+        encodeURIComponent(MODEL) + '/training/runs/' + r.run_id + '/best.pt" download>download best.pt</a>';
+      el.trainingStatus.classList.add('ready');
+      btn.classList.add('done');
+    } else if (!t.available) {
+      el.trainingStatus.textContent = 'Training disabled: ' + (t.error || 'ultralytics not installed');
+      el.trainingStatus.classList.add('warn');
+    } else if (!t.ready) {
+      const left = Math.max(0, (t.total || 0) - (t.doneCount || 0));
+      el.trainingStatus.textContent = left
+        ? 'Annotate ' + left + ' more image(s) to enable training.'
+        : 'No images yet.';
+    } else {
+      el.trainingStatus.textContent = 'Ready · ' + t.doneCount + ' / ' + t.total + ' images done.';
+      el.trainingStatus.classList.add('ready');
+    }
+
+    btn.disabled = !(t.ready && t.available);
+    btn.textContent = 'Start Training';
+  }
+
+  async function startTraining() {
+    if (state.dirty) {
+      // Save before training so the latest annotations are exported.
+      await saveAnnotations(true);
+    }
+    el.trainBtn.disabled = true;
+    el.trainingStatus.textContent = 'Starting…';
+    el.trainingStatus.className = 'training-status running';
+    try {
+      const d = await api('POST', '/api/models/' + encodeURIComponent(MODEL) + '/training/start', {});
+      state.training.latestRun = d.run;
+      renderTraining();
+      pollRun(d.run.run_id);
+    } catch (e) {
+      el.trainingStatus.textContent = 'Start failed: ' + e.message;
+      el.trainingStatus.className = 'training-status warn';
+      el.trainBtn.disabled = false;
+    }
+  }
+
+  function pollRun(runId) {
+    clearTimeout(state.trainingPollTimer);
+    state.trainingPollTimer = setTimeout(async () => {
+      try {
+        const d = await api('GET', '/api/models/' + encodeURIComponent(MODEL) + '/training/runs/' + runId);
+        state.training.latestRun = d.run;
+        renderTraining();
+        if (d.run.status === 'running' || d.run.status === 'starting') {
+          pollRun(runId);
+        }
+      } catch (e) {
+        // Run may have been deleted; stop.
+      }
+    }, 3000);
   }
 
   async function loadSamStatus() {
@@ -879,14 +980,16 @@
     if (next >= 0 && next < state.allImages.length) selectImage(next);
   }
 
-  function markCurrentDone() {
+  async function markCurrentDone() {
     if (state.currentIndex < 0) return;
     const ann = currentAnn();
     ann.status = 'done';
     state.allImages[state.currentIndex].status = 'done';
     markDirty();
     renderNav();
-    saveAnnotations(false);
+    await saveAnnotations(false);
+    // The 'all done' gate may have just flipped — refresh training status.
+    loadTrainingStatus();
   }
 
   function deleteSelected() {
@@ -1186,6 +1289,7 @@
   el.markDoneBtn.addEventListener('click', markCurrentDone);
   el.classAddBtn.addEventListener('click', () => openClassModal(null));
   el.reviewedBtn.addEventListener('click', toggleReviewed);
+  el.trainBtn.addEventListener('click', startTraining);
 
   el.findAiBtn.addEventListener('click', () => {
     setSaveStatus('Find Objects with AI: coming soon (needs YOLO model).', 'warn');
@@ -1227,6 +1331,7 @@
       await loadAnnotations();
       await loadImageList();
       await loadSamStatus();
+      await loadTrainingStatus();
       renderClassList();
       renderSidebar();
       renderTags();
