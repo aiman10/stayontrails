@@ -8,3 +8,7 @@ saved_paths/binnenplein-kampus-kaai.json
 saved_paths/laerbeekbos-wandeling-vanaf-tramhalte-tentoonstellingenlaan.json
 saved_paths/laerbeekbos-wandeling-vanaf-tramhalte-tentoonstellingenlaan.json
 /.claude
+# YOLO model weights (heavy binaries) — keep the models/ dir, ignore the .pt files
+models/*.pt
+# Smart Select sidecar
+smart-select/__pycache__/

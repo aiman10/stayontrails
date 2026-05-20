@@ -16,6 +16,10 @@
 
 const SCHEMA_VERSION = 2;
 
+// Smart Select inference sidecar (smart-select/server.py). Override with env.
+$SMART_URL   = getenv('SMART_URL') ?: 'http://127.0.0.1:5002';
+$MODELS_DIR  = __DIR__ . DIRECTORY_SEPARATOR . 'models';
+
 $DEFAULT_PALETTE = ['#7C3AED', '#06D6A0', '#F4A261', '#EF476F', '#22d3ee', '#facc15'];
 $DEFAULT_CLASSES = [
     ['id' => 0, 'name' => 'path-oxod', 'color' => '#7C3AED'],
@@ -164,6 +168,94 @@ function setReviewed(string $modelDir, string $filename, bool $value): bool {
     return $value;
 }
 
+// ── Dataset export helpers ───────────────────────────────────────────────────
+function computeSplits(array $filenames, float $valFrac = 0.2, int $seed = 42): array {
+    if (empty($filenames)) return ['train' => [], 'val' => []];
+    $files = $filenames;
+    sort($files);
+    srand($seed);
+    shuffle($files);
+    $n = count($files);
+    $nVal = $n >= 2 ? max(1, (int) round($n * $valFrac)) : 0;
+    $val   = array_slice($files, 0, $nVal);
+    $train = array_slice($files, $nVal);
+    sort($val); sort($train);
+    return ['train' => $train, 'val' => $val];
+}
+
+function toYoloLabelLines(array $image, array $classIdMap, int $imgW = 640, int $imgH = 480): array {
+    $ann   = $image['annotations'] ?? [];
+    $lines = [];
+    foreach ($ann['segments'] ?? [] as $seg) {
+        $cid = $classIdMap[$seg['classId'] ?? -1] ?? null;
+        if ($cid === null) continue;
+        $pts = $seg['points'] ?? [];
+        if (count($pts) < 3) continue;
+        $flat = [];
+        foreach ($pts as $p) {
+            $flat[] = sprintf('%.6f', max(0.0, min(1.0, $p['x'] / $imgW)));
+            $flat[] = sprintf('%.6f', max(0.0, min(1.0, $p['y'] / $imgH)));
+        }
+        $lines[] = $cid . ' ' . implode(' ', $flat);
+    }
+    foreach ($ann['boxes'] ?? [] as $box) {
+        $cid = $classIdMap[$box['classId'] ?? -1] ?? null;
+        if ($cid === null) continue;
+        $x = (float)$box['x']; $y = (float)$box['y'];
+        $w = (float)$box['w']; $h = (float)$box['h'];
+        $flat = [
+            sprintf('%.6f', max(0.0, min(1.0, $x / $imgW))),
+            sprintf('%.6f', max(0.0, min(1.0, $y / $imgH))),
+            sprintf('%.6f', max(0.0, min(1.0, ($x + $w) / $imgW))),
+            sprintf('%.6f', max(0.0, min(1.0, $y / $imgH))),
+            sprintf('%.6f', max(0.0, min(1.0, ($x + $w) / $imgW))),
+            sprintf('%.6f', max(0.0, min(1.0, ($y + $h) / $imgH))),
+            sprintf('%.6f', max(0.0, min(1.0, $x / $imgW))),
+            sprintf('%.6f', max(0.0, min(1.0, ($y + $h) / $imgH))),
+        ];
+        $lines[] = $cid . ' ' . implode(' ', $flat);
+    }
+    return $lines;
+}
+
+// ── Smart Select proxy ───────────────────────────────────────────────────────
+function listPtModels(string $modelsDir): array {
+    if (!is_dir($modelsDir)) return [];
+    return array_values(array_map('basename', glob($modelsDir . DIRECTORY_SEPARATOR . '*.pt') ?: []));
+}
+
+/**
+ * Forward a JSON payload to the inference sidecar and relay its response
+ * verbatim. On connection failure, returns a 503 so the UI can degrade.
+ */
+function proxySmart(string $endpoint, array $payload): void {
+    global $SMART_URL;
+    $url  = rtrim($SMART_URL, '/') . $endpoint;
+    $json = json_encode($payload, JSON_UNESCAPED_SLASHES);
+
+    $ch = curl_init($url);
+    curl_setopt_array($ch, [
+        CURLOPT_POST           => true,
+        CURLOPT_POSTFIELDS     => $json,
+        CURLOPT_HTTPHEADER     => ['Content-Type: application/json'],
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_TIMEOUT        => 120,
+        CURLOPT_CONNECTTIMEOUT => 3,
+    ]);
+    $resp = curl_exec($ch);
+    if ($resp === false) {
+        $err = curl_error($ch);
+        curl_close($ch);
+        jsonError('Smart Select service not reachable (' . $err . '). Start smart-select/run.bat.', 503);
+    }
+    $code = curl_getinfo($ch, CURLINFO_HTTP_CODE) ?: 502;
+    curl_close($ch);
+    http_response_code($code);
+    header('Content-Type: application/json; charset=utf-8');
+    echo $resp;
+    exit;
+}
+
 function listModels(string $captureRoot): array {
     if (!is_dir($captureRoot)) return [];
     $out = [];
@@ -181,6 +273,12 @@ function listModels(string $captureRoot): array {
 // ── JSON API ─────────────────────────────────────────────────────────────────
 $action = $_GET['action'] ?? '';
 if ($action !== '') {
+    // List available YOLO .pt models for the Smart Select dropdown. This is a
+    // local directory scan, so it works even when the sidecar is down.
+    if ($action === 'models') {
+        jsonResponse(['ok' => true, 'models' => listPtModels($MODELS_DIR)]);
+    }
+
     $model = slugifyName($_GET['model'] ?? '');
     if ($model === '') jsonError('Invalid model.', 400);
     $modelDir = $captureRoot . DIRECTORY_SEPARATOR . $model;
@@ -236,6 +334,114 @@ if ($action !== '') {
         $value = is_array($body) ? (bool) ($body['reviewed'] ?? true) : true;
         $newState = setReviewed($modelDir, $filename, $value);
         jsonResponse(['ok' => true, 'reviewed' => $newState]);
+    }
+
+    if ($action === 'export_dataset' && $method === 'GET') {
+        if (!class_exists('ZipArchive')) jsonError('ZipArchive not available on this server.', 500);
+        $loaded  = loadAnnotations($modelDir, $model);
+        $data    = $loaded['data'];
+        $classes = $data['classes'] ?? [];
+        $images  = $data['images'] ?? [];
+
+        $classIdMap = [];
+        foreach ($classes as $i => $cls) {
+            $classIdMap[$cls['id']] = $i;
+        }
+        $byFile = [];
+        foreach ($images as $img) {
+            if (isset($img['file'])) $byFile[$img['file']] = $img;
+        }
+
+        // Only export images that are explicitly marked done.
+        $doneFiles = [];
+        foreach ($images as $img) {
+            if (($img['status'] ?? '') === 'done' && isset($img['file'])) {
+                $doneFiles[] = $img['file'];
+            }
+        }
+        sort($doneFiles);
+        $splits = computeSplits($doneFiles);
+
+        // data.yaml — path: . resolves relative to the YAML file so the ZIP
+        // works wherever the user extracts it.
+        $namesLines = [];
+        foreach ($classes as $i => $cls) {
+            $namesLines[] = "  $i: " . ($cls['name'] ?? "class$i");
+        }
+        $yaml = "path: .\ntrain: images/train\nval: images/val\nnames:\n"
+              . implode("\n", $namesLines) . "\n";
+
+        // README with the exact training command.
+        $classList = implode(', ', array_map(fn($c) => $c['name'] ?? '', $classes));
+        $readme = "# {$model} — YOLO segmentation dataset\n\n"
+                . "Generated by Stay On Trails annotator.\n\n"
+                . "Classes: {$classList}\n"
+                . "Train images : " . count($splits['train']) . "\n"
+                . "Val images   : " . count($splits['val'])   . "\n\n"
+                . "## Train\n\n"
+                . "```\npip install ultralytics\n"
+                . "yolo train model=yolov8n-seg.pt data=data.yaml epochs=100 imgsz=640\n"
+                . "```\n\n"
+                . "Trained weights will be saved to runs/segment/train/weights/best.pt\n";
+
+        $tmpFile = sys_get_temp_dir() . DIRECTORY_SEPARATOR . $model . '_dataset_' . time() . '.zip';
+        $zip = new ZipArchive();
+        if ($zip->open($tmpFile, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
+            jsonError('Could not create ZIP file.', 500);
+        }
+        $zip->addFromString('data.yaml', $yaml);
+        $zip->addFromString('README.md', $readme);
+        if (is_file($modelDir . DIRECTORY_SEPARATOR . 'annotations.json')) {
+            $zip->addFile($modelDir . DIRECTORY_SEPARATOR . 'annotations.json', 'annotations.json');
+        }
+        foreach (['train', 'val'] as $split) {
+            foreach ($splits[$split] as $fname) {
+                $src = $modelDir . DIRECTORY_SEPARATOR . $fname;
+                if (is_file($src)) {
+                    $zip->addFile($src, "images/$split/$fname");
+                }
+                $labelLines = toYoloLabelLines($byFile[$fname] ?? [], $classIdMap);
+                $stem = pathinfo($fname, PATHINFO_FILENAME);
+                $zip->addFromString("labels/$split/$stem.txt", implode("\n", $labelLines));
+            }
+        }
+        $zip->close();
+
+        header('Content-Type: application/zip');
+        header('Content-Disposition: attachment; filename="' . $model . '_dataset.zip"');
+        header('Content-Length: ' . filesize($tmpFile));
+        header('Cache-Control: no-cache');
+        readfile($tmpFile);
+        unlink($tmpFile);
+        exit;
+    }
+
+    // Smart Select: resolve + validate the image path, then proxy to the sidecar.
+    if (in_array($action, ['smart_detect', 'smart_pick', 'smart_simplify'], true) && $method === 'POST') {
+        $body = json_decode(file_get_contents('php://input'), true);
+        if (!is_array($body)) jsonError('Body must be a JSON object.', 400);
+
+        $image = (string) ($body['image'] ?? '');
+        if (!isSafeFilename($image)) jsonError('Invalid filename.', 400);
+        $imagePath = $modelDir . DIRECTORY_SEPARATOR . $image;
+        if (!is_file($imagePath)) jsonError('Image not found.', 404);
+
+        $ptModel = basename((string) ($body['model'] ?? ''));
+        if (!in_array($ptModel, listPtModels($MODELS_DIR), true)) {
+            jsonError("YOLO model '$ptModel' not found in models/.", 404);
+        }
+
+        // Forward everything from the client plus the resolved absolute path.
+        $payload = $body;
+        $payload['image_path'] = $imagePath;
+        $payload['model'] = $ptModel;
+
+        $endpoint = [
+            'smart_detect'   => '/api/smart_select/detect',
+            'smart_pick'     => '/api/smart_select/pick',
+            'smart_simplify' => '/api/smart_select/simplify',
+        ][$action];
+        proxySmart($endpoint, $payload);
     }
 
     jsonError('Unknown action.', 404);
@@ -418,6 +624,7 @@ function renderAnnotator(string $model): void {
         <div class="mode-toolbar">
           <button class="btn active" id="modePolygon" type="button" title="Polygon (P)">△ Polygon</button>
           <button class="btn" id="modeBox" type="button" title="Box (B)">▭ Box</button>
+          <button class="btn" id="modeSmart" type="button" title="Smart Select (S)">✨ Smart</button>
           <button class="btn" id="modeSelect" type="button" title="Select (V)">↖ Select</button>
         </div>
       </div>
@@ -433,9 +640,31 @@ function renderAnnotator(string $model): void {
         <div class="right-img-list" id="rightImgList"></div>
       </div>
 
+      <div class="export-box">
+        <div class="sectionTitle" style="margin-bottom:6px">Export</div>
+        <div class="export-status" id="exportStatus">Annotate all images to unlock.</div>
+        <button class="btn export-btn" id="exportBtn" type="button" disabled>⬇ Download ZIP</button>
+      </div>
+
     </div>
   </aside>
 
+</div>
+
+<div class="smart-panel" id="smartPanel" style="display:none">
+  <div class="smart-head">✨ Smart Select <button class="pop-x" id="smartClose" type="button">×</button></div>
+  <label class="smart-label">Model</label>
+  <select id="smartModel" class="smart-select"></select>
+  <div class="smart-status" id="smartStatus">Loading…</div>
+  <div class="smart-hint">Click an object to select it. Click another to add it; click a selected one to remove it.</div>
+  <label class="smart-label">Simplify</label>
+  <input type="range" id="smartSimplify" min="0" max="4" step="1" value="2" class="smart-slider" />
+  <div class="smart-slider-labels"><span>Simple</span><span>Complex</span></div>
+  <div class="smart-actions">
+    <button class="btn" id="smartUndo" type="button" title="Undo last click">↩ Undo</button>
+    <button class="btn btn-warn" id="smartDelete" type="button">Delete</button>
+    <button class="btn btn-cyan" id="smartFinish" type="button">Finish (Enter)</button>
+  </div>
 </div>
 
 <div id="modalRoot"></div>

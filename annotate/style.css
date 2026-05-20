@@ -54,7 +54,7 @@ a:focus-visible,button:focus-visible{outline:3px solid var(--focus);outline-offs
 .anno-layout{
   max-width:1420px;margin:0 auto;padding:0 18px 14px;
   display:grid;
-  grid-template-columns:280px minmax(0,1fr) 200px;
+  grid-template-columns:280px minmax(0,1fr) 280px;
   gap:12px;
   height:calc(100vh - 62px - 56px);
 }
@@ -110,6 +110,10 @@ a:focus-visible,button:focus-visible{outline:3px solid var(--focus);outline-offs
 .ri-dot.done{background:var(--ok)}
 .ri-dot.in-progress{background:#fbbf24}
 .ri-dot.unlabeled{background:rgba(255,255,255,.2)}
+.export-box{flex-shrink:0;padding:10px;border-top:1px solid var(--line);display:flex;flex-direction:column;gap:6px}
+.export-status{font-size:11px;color:var(--muted);min-height:14px;line-height:1.4}
+.export-btn{background:linear-gradient(180deg,rgba(52,211,153,.25),rgba(52,211,153,.1));border-color:rgba(52,211,153,.4);color:var(--ok);font-size:12px}
+.export-btn:hover:not(:disabled){background:linear-gradient(180deg,rgba(52,211,153,.4),rgba(52,211,153,.18))}
 .bottom-actions{display:flex;flex-direction:column;gap:8px;flex-shrink:0}
 .nav-btns{display:flex;gap:8px}
 .btn-cyan{background:rgba(34,211,238,.12);color:var(--focus);border-color:rgba(34,211,238,.35)}
@@ -183,6 +187,24 @@ a:focus-visible,button:focus-visible{outline:3px solid var(--focus);outline-offs
 .popup .pop-class-row:hover{background:rgba(255,255,255,.07)}
 .popup .pop-class-row .class-dot{width:9px;height:9px;border-radius:50%}
 .popup .pop-class-row .pop-class-num{color:var(--muted);width:14px;text-align:right}
+
+/* Smart Select mode button + floating panel */
+#modeSmart.active{background:rgba(124,58,237,.22);border-color:#7C3AED;color:#c4b5fd}
+.smart-panel{position:fixed;top:120px;left:24px;z-index:55;width:260px;background:#0f172a;border:1px solid var(--line);border-radius:14px;padding:14px;color:#fff;box-shadow:0 10px 30px rgba(0,0,0,.5)}
+.smart-head{font-size:13px;font-weight:700;display:flex;align-items:center;margin-bottom:10px}
+.smart-head .pop-x{margin-left:auto;cursor:pointer;background:none;border:0;color:var(--muted);font-size:16px}
+.smart-head .pop-x:hover{color:#fff}
+.smart-label{display:block;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:8px 0 4px}
+.smart-select{width:100%;padding:7px;border-radius:8px;border:1px solid var(--line);background:#020617;color:#fff;font-size:13px}
+.smart-status{font-size:11px;color:var(--muted);min-height:14px;margin:8px 0;line-height:1.4}
+.smart-status.warn{color:var(--warn)}
+.smart-status.ready{color:var(--ok)}
+.smart-status.busy{color:#c4b5fd}
+.smart-hint{font-size:11px;color:var(--muted);line-height:1.4;margin-bottom:6px}
+.smart-slider{width:100%;accent-color:#7C3AED}
+.smart-slider-labels{display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:2px}
+.smart-actions{display:flex;gap:6px;margin-top:12px}
+.smart-actions .btn{flex:1;padding:7px;font-size:12px}
 
 .error-box{max-width:480px;margin:80px auto;padding:32px;background:rgba(15,23,42,.84);border:1px solid var(--line);border-radius:18px;text-align:center}
 .error-box h2{color:var(--warn);margin-top:0}

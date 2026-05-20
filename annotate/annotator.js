@@ -23,7 +23,7 @@
     classes: [],             // [{id, name, color}]
     currentIndex: -1,
     selectedClass: 0,
-    mode: 'polygon',         // 'polygon' | 'box' | 'select'
+    mode: 'polygon',         // 'polygon' | 'box' | 'select' | 'smart'
     selection: null,         // {type:'segment'|'box', idx:number} | null
     drawing: null,           // current in-progress shape
     dirty: false,
@@ -33,7 +33,19 @@
     classFilter: null,             // when set in classes tab: highlight only this class id
     reviewedSet: new Set(),        // filenames marked reviewed (for nav lookup)
     tags: [],                      // UI only, not persisted
+    smart: {
+      models: [],                  // available .pt model names
+      model: null,                 // selected .pt
+      detectedFor: null,           // image filename masks were detected for
+      selectedIndices: [],         // mask indices currently combined into preview
+      history: [],                 // [{selectedIndices, polygon, className, classId}] for undo
+      preview: null,               // {points:[{x,y}], className, classId} | null
+      busy: false,
+    },
   };
+
+  // Simplify slider position (0=Simple .. 4=Complex) -> approxPolyDP epsilon ratio.
+  const SIMPLIFY_EPS = [0.015, 0.008, 0.003, 0.001, 0.0005];
 
   // ── DOM refs ──────────────────────────────────────────────────────────────
   const el = {
@@ -57,7 +69,16 @@
     reviewedBtn: document.getElementById('reviewedBtn'),
     modePolygon: document.getElementById('modePolygon'),
     modeBox: document.getElementById('modeBox'),
+    modeSmart: document.getElementById('modeSmart'),
     modeSelect: document.getElementById('modeSelect'),
+    smartPanel: document.getElementById('smartPanel'),
+    smartModel: document.getElementById('smartModel'),
+    smartStatus: document.getElementById('smartStatus'),
+    smartSimplify: document.getElementById('smartSimplify'),
+    smartUndo: document.getElementById('smartUndo'),
+    smartDelete: document.getElementById('smartDelete'),
+    smartFinish: document.getElementById('smartFinish'),
+    smartClose: document.getElementById('smartClose'),
     banner: document.getElementById('banner'),
     modalRoot: document.getElementById('modalRoot'),
     popupRoot: document.getElementById('popupRoot'),
@@ -69,6 +90,8 @@
     counterCur: document.getElementById('counterCur'),
     counterTot: document.getElementById('counterTot'),
     tabs: Array.from(document.querySelectorAll('.tab')),
+    exportBtn: document.getElementById('exportBtn'),
+    exportStatus: document.getElementById('exportStatus'),
   };
 
   // ── Helpers ───────────────────────────────────────────────────────────────
@@ -196,6 +219,200 @@
     }
   }
 
+  // ── Export ───────────────────────────────────────────────────────────────
+  function isAllDone() {
+    if (!state.allImages.length) return false;
+    return state.allImages.every(img => {
+      const ann = state.annMap[img.file];
+      return (ann && ann.status === 'done') || img.status === 'done';
+    });
+  }
+
+  function updateExportBtn() {
+    const done = isAllDone();
+    el.exportBtn.disabled = !done;
+    const total = state.allImages.length;
+    const doneCount = state.allImages.filter(img => {
+      const ann = state.annMap[img.file];
+      return (ann && ann.status === 'done') || img.status === 'done';
+    }).length;
+    el.exportStatus.textContent = done
+      ? 'All ' + total + ' images annotated.'
+      : doneCount + ' / ' + total + ' images done.';
+  }
+
+  // ── Smart Select (YOLO-assisted) ───────────────────────────────────────────
+  function smartEpsilon() {
+    return SIMPLIFY_EPS[parseInt(el.smartSimplify.value, 10)] || 0.003;
+  }
+  function setSmartStatus(msg, tone) {
+    el.smartStatus.textContent = msg;
+    el.smartStatus.className = 'smart-status' + (tone ? ' ' + tone : '');
+  }
+
+  async function loadSmartModels() {
+    try {
+      const d = await api('GET', 'annotate.php?action=models');
+      state.smart.models = d.models || [];
+    } catch (e) {
+      state.smart.models = [];
+    }
+    el.smartModel.innerHTML = '';
+    if (!state.smart.models.length) {
+      const opt = document.createElement('option');
+      opt.value = ''; opt.textContent = '(no models in models/)';
+      el.smartModel.appendChild(opt);
+      el.modeSmart.disabled = true;
+      el.modeSmart.title = 'Smart Select disabled — add a .pt to models/ and run smart-select/run.bat';
+      return;
+    }
+    state.smart.models.forEach(m => {
+      const opt = document.createElement('option');
+      opt.value = m; opt.textContent = m;
+      el.smartModel.appendChild(opt);
+    });
+    const def = state.smart.models.find(m => m.toLowerCase().includes('laerbeekbos')) || state.smart.models[0];
+    el.smartModel.value = def;
+    state.smart.model = def;
+    el.modeSmart.disabled = false;
+  }
+
+  function smartClearPreview() {
+    state.smart.selectedIndices = [];
+    state.smart.preview = null;
+    state.smart.history = [];
+    redraw();
+  }
+
+  async function smartDetect() {
+    const f = currentFile();
+    if (!f || !state.smart.model) { setSmartStatus('Pick a model.', 'warn'); return; }
+    state.smart.busy = true;
+    setSmartStatus('Detecting objects…', 'busy');
+    try {
+      const d = await api('POST', 'annotate.php?action=smart_detect&model=' + encodeURIComponent(MODEL), {
+        image: f, model: state.smart.model, confidence: 0.5, img_w: IMG_W, img_h: IMG_H,
+      });
+      state.smart.detectedFor = f;
+      setSmartStatus(
+        (d.num_detections || 0) + ' object(s) found. Click one.',
+        d.num_detections ? 'ready' : 'warn',
+      );
+    } catch (e) {
+      setSmartStatus('Detect failed: ' + e.message, 'warn');
+    } finally {
+      state.smart.busy = false;
+    }
+  }
+
+  async function smartPickAt(p) {
+    const f = currentFile();
+    if (!f || !state.smart.model || state.smart.busy) return;
+    state.smart.busy = true;
+    el.canvasOverlay.classList.remove('error');
+    el.canvasOverlay.textContent = 'Selecting…';
+    el.canvasOverlay.style.display = 'flex';
+    try {
+      const d = await api('POST', 'annotate.php?action=smart_pick&model=' + encodeURIComponent(MODEL), {
+        image: f, model: state.smart.model,
+        point: [Math.round(p.x), Math.round(p.y)],
+        epsilon_ratio: smartEpsilon(),
+        selected_indices: state.smart.selectedIndices,
+        img_w: IMG_W, img_h: IMG_H,
+      });
+      el.canvasOverlay.style.display = 'none';
+
+      const newIndices = d.selected_indices || state.smart.selectedIndices;
+      const changed = JSON.stringify(newIndices) !== JSON.stringify(state.smart.selectedIndices);
+      if (!changed && !d.polygon) {
+        setSmartStatus(d.message || 'No detection at this point.', 'warn');
+        return;
+      }
+      // Record the pre-click state so Undo can step back.
+      state.smart.history.push({
+        selectedIndices: state.smart.selectedIndices.slice(),
+        preview: state.smart.preview,
+      });
+      state.smart.selectedIndices = newIndices;
+      if (d.polygon && d.polygon.length >= 3) {
+        state.smart.preview = {
+          points: d.polygon.map(pt => ({ x: pt[0], y: pt[1] })),
+          className: d.class_name, classId: d.class_id,
+        };
+        setSmartStatus(
+          (d.class_name || 'region') + ' · ' + d.num_vertices + ' pts · '
+          + newIndices.length + ' part(s)', 'ready');
+      } else {
+        state.smart.preview = null;
+        setSmartStatus(newIndices.length ? 'Region too small.' : 'Click an object.', 'ready');
+      }
+      redraw();
+    } catch (e) {
+      el.canvasOverlay.classList.add('error');
+      el.canvasOverlay.textContent = 'Smart Select failed: ' + e.message;
+      setTimeout(() => { el.canvasOverlay.style.display = 'none'; }, 2500);
+    } finally {
+      state.smart.busy = false;
+    }
+  }
+
+  async function smartSimplify() {
+    if (!state.smart.selectedIndices.length) return;
+    const f = currentFile();
+    try {
+      const d = await api('POST', 'annotate.php?action=smart_simplify&model=' + encodeURIComponent(MODEL), {
+        image: f, model: state.smart.model,
+        epsilon_ratio: smartEpsilon(),
+        selected_indices: state.smart.selectedIndices,
+        img_w: IMG_W, img_h: IMG_H,
+      });
+      if (d.polygon && d.polygon.length >= 3) {
+        state.smart.preview = {
+          points: d.polygon.map(pt => ({ x: pt[0], y: pt[1] })),
+          className: d.class_name, classId: d.class_id,
+        };
+        setSmartStatus((d.class_name || 'region') + ' · ' + d.num_vertices + ' pts', 'ready');
+        redraw();
+      }
+    } catch (e) {
+      setSmartStatus('Simplify failed: ' + e.message, 'warn');
+    }
+  }
+
+  function smartUndo() {
+    const prev = state.smart.history.pop();
+    if (!prev) { setSmartStatus('Nothing to undo.', 'warn'); return; }
+    state.smart.selectedIndices = prev.selectedIndices;
+    state.smart.preview = prev.preview;
+    setSmartStatus('Undone.', 'ready');
+    redraw();
+  }
+
+  function smartFinish() {
+    const pv = state.smart.preview;
+    if (!pv || pv.points.length < 3) { setSmartStatus('Nothing to finish.', 'warn'); return; }
+    // Prefer the project class whose name matches the model's class; else the
+    // class currently selected in the annotator.
+    let classId = state.selectedClass;
+    if (pv.className) {
+      const match = state.classes.find(c => c.name === pv.className);
+      if (match) classId = match.id;
+    }
+    const ann = currentAnn();
+    ann.segments.push({
+      id: shortId('s'),
+      classId,
+      source: 'smart',
+      points: pv.points.map(p => ({ x: Math.round(p.x), y: Math.round(p.y) })),
+    });
+    if (ann.status === 'unlabeled') ann.status = 'in-progress';
+    state.allImages[state.currentIndex].status = ann.status;
+    markDirty();
+    smartClearPreview();
+    renderSidebar(); renderNav(); redraw();
+    setSmartStatus('Saved. Click another object.', 'ready');
+  }
+
   // ── Render: right-panel image list ───────────────────────────────────────
   function renderRightImageList() {
     el.imgCount.textContent = state.allImages.length;
@@ -240,6 +457,7 @@
     }
     el.reviewedBtn.classList.toggle('active', f && state.reviewedSet.has(f));
     renderRightImageList();
+    updateExportBtn();
   }
 
   // ── Render: class picker ───────────────────────────────────────────────────
@@ -816,6 +1034,18 @@
       }));
     }
 
+    // Smart Select preview (green dashed)
+    if (state.mode === 'smart' && state.smart.preview && state.smart.preview.points.length > 1) {
+      const pts = state.smart.preview.points;
+      const flat = [];
+      pts.forEach(p => flat.push(p.x, p.y));
+      drawLayer.add(new Konva.Line({
+        points: flat, closed: true, stroke: '#06D6A0', strokeWidth: 2,
+        fill: '#06D6A04d', dash: [6, 4],
+      }));
+      pts.forEach(p => drawLayer.add(new Konva.Circle({ x: p.x, y: p.y, radius: 3, fill: '#06D6A0' })));
+    }
+
     stage.batchDraw();
   }
 
@@ -831,6 +1061,7 @@
     renderNav();
     renderSidebar();
     loadImageInto(state.allImages[index].file);
+    if (state.mode === 'smart') { smartClearPreview(); smartDetect(); }
   }
 
   function navigateImage(delta) {
@@ -859,17 +1090,33 @@
   }
 
   function setMode(m) {
+    if (m === 'smart' && el.modeSmart.disabled) {
+      setSaveStatus('Smart Select unavailable — add a .pt to models/ and start the sidecar.', 'warn');
+      return;
+    }
     state.mode = m;
     state.drawing = null;
     state.selection = null;
     boxDragStart = null;
-    [el.modePolygon, el.modeBox, el.modeSelect].forEach(b => b.classList.remove('active'));
+    [el.modePolygon, el.modeBox, el.modeSmart, el.modeSelect].forEach(b => b.classList.remove('active'));
     if (m === 'polygon') el.modePolygon.classList.add('active');
     if (m === 'box') el.modeBox.classList.add('active');
+    if (m === 'smart') el.modeSmart.classList.add('active');
     if (m === 'select') el.modeSelect.classList.add('active');
+
+    if (m === 'smart') {
+      el.smartPanel.style.display = 'block';
+      smartClearPreview();
+      smartDetect();
+    } else {
+      el.smartPanel.style.display = 'none';
+      if (state.smart.preview || state.smart.selectedIndices.length) smartClearPreview();
+    }
+
     setDrawStatus(
       m === 'polygon' ? 'Polygon mode · Click to add vertices · Double-click to close · Esc to cancel' :
       m === 'box' ? 'Box mode · Drag to draw a rectangle · Esc to cancel' :
+      m === 'smart' ? 'Smart mode · Click an object · Enter to keep · Esc to exit' :
       'Select mode · Click an annotation to edit · Delete to remove'
     );
     redraw();
@@ -1015,6 +1262,10 @@
         addPolygonVertex(p);
         return;
       }
+      if (state.mode === 'smart') {
+        smartPickAt(p);
+        return;
+      }
       if (state.mode === 'select') {
         // Clicking empty stage deselects (clicks on shapes are handled by the shape's own click handler).
         if (evt && evt.target === stage && state.selection) {
@@ -1039,6 +1290,11 @@
     if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
 
     if (e.key === 'Escape') {
+      if (state.mode === 'smart') {
+        if (state.smart.preview || state.smart.selectedIndices.length) smartClearPreview();
+        else setMode('select');
+        return;
+      }
       if (state.drawing) cancelDrawing();
       else if (state.selection) { state.selection = null; renderSidebar(); redraw(); }
       return;
@@ -1061,6 +1317,7 @@
       }
     }
     if (e.key === 'Delete' && state.selection) { deleteSelected(); return; }
+    if (e.key === 'Enter' && state.mode === 'smart') { smartFinish(); return; }
     if (e.key === 'Enter' && state.drawing) {
       if (state.drawing.type === 'polygon') commitPolygon();
       return;
@@ -1071,6 +1328,7 @@
     if (e.key === 'p' || e.key === 'P') { setMode('polygon'); return; }
     if (e.key === 'b' || e.key === 'B') { setMode('box'); return; }
     if (e.key === 'v' || e.key === 'V') { setMode('select'); return; }
+    if ((e.key === 's' || e.key === 'S') && !e.ctrlKey && !e.metaKey) { setMode('smart'); return; }
     if (/^[1-9]$/.test(e.key)) {
       const idx = parseInt(e.key, 10) - 1;
       if (state.classes[idx]) { state.selectedClass = state.classes[idx].id; renderClassList(); }
@@ -1084,7 +1342,25 @@
   // ── Button wiring ─────────────────────────────────────────────────────────
   el.modePolygon.addEventListener('click', () => setMode('polygon'));
   el.modeBox.addEventListener('click', () => setMode('box'));
+  el.modeSmart.addEventListener('click', () => setMode('smart'));
   el.modeSelect.addEventListener('click', () => setMode('select'));
+
+  // Smart Select panel
+  el.smartClose.addEventListener('click', () => setMode('select'));
+  el.smartUndo.addEventListener('click', smartUndo);
+  el.smartDelete.addEventListener('click', smartClearPreview);
+  el.smartFinish.addEventListener('click', smartFinish);
+  el.smartModel.addEventListener('change', () => {
+    state.smart.model = el.smartModel.value;
+    smartClearPreview();
+    if (state.mode === 'smart') smartDetect();
+  });
+  el.smartSimplify.addEventListener('input', () => {
+    if (state.smart.selectedIndices.length) smartSimplify();
+  });
+  el.exportBtn.addEventListener('click', () => {
+    window.location.href = 'annotate.php?action=export_dataset&model=' + encodeURIComponent(MODEL);
+  });
   el.saveBtn.addEventListener('click', () => saveAnnotations(false));
   el.prevBtn.addEventListener('click', () => navigateImage(-1));
   el.nextBtn.addEventListener('click', () => navigateImage(1));
@@ -1126,6 +1402,7 @@
     try {
       await loadAnnotations();
       await loadImageList();
+      await loadSmartModels();
       renderClassList();
       renderSidebar();
       renderTags();
