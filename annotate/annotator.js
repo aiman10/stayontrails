@@ -229,14 +229,13 @@
   }
 
   function updateExportBtn() {
-    const done = isAllDone();
-    el.exportBtn.disabled = !done;
     const total = state.allImages.length;
     const doneCount = state.allImages.filter(img => {
       const ann = state.annMap[img.file];
       return (ann && ann.status === 'done') || img.status === 'done';
     }).length;
-    el.exportStatus.textContent = done
+    el.exportBtn.disabled = doneCount === 0;
+    el.exportStatus.textContent = doneCount === total && total > 0
       ? 'All ' + total + ' images annotated.'
       : doneCount + ' / ' + total + ' images done.';
   }
