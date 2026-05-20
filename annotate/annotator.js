@@ -9,7 +9,7 @@
   'use strict';
 
   const MODEL = window.MODEL;
-  const IMG_BASE = '/img/' + MODEL + '/';
+  const IMG_BASE = 'recorded_routes/' + MODEL + '/';
 
   // ── Constants ──────────────────────────────────────────────────────────────
   // Fixed palette: 0 path-oxod, 1 grass, 2 puddle, 3 road. Extras for added classes.
@@ -23,15 +23,11 @@
     classes: [],             // [{id, name, color}]
     currentIndex: -1,
     selectedClass: 0,
-    mode: 'polygon',         // 'polygon' | 'box' | 'select' | 'sam'
+    mode: 'polygon',         // 'polygon' | 'box' | 'select'
     selection: null,         // {type:'segment'|'box', idx:number} | null
     drawing: null,           // current in-progress shape
     dirty: false,
     loadStatus: 'ok',        // 'ok' | 'missing' | 'corrupt' | 'future'
-    samAvailable: false,
-    samError: null,
-    training: { ready: false, doneCount: 0, total: 0, available: false, error: null, latestRun: null },
-    trainingPollTimer: null,
     tab: 'classes',                // 'classes' | 'layers'
     layerVisibility: {},           // regionId -> bool (true = visible)
     classFilter: null,             // when set in classes tab: highlight only this class id
@@ -50,7 +46,6 @@
     groupName: document.getElementById('groupName'),
     tabBody: document.getElementById('tabBody'),
     unusedList: document.getElementById('unusedList'),
-    findAiBtn: document.getElementById('findAiBtn'),
     tagsList: document.getElementById('tagsList'),
     tagsInput: document.getElementById('tagsInput'),
     drawStatus: document.getElementById('drawStatus'),
@@ -62,7 +57,6 @@
     reviewedBtn: document.getElementById('reviewedBtn'),
     modePolygon: document.getElementById('modePolygon'),
     modeBox: document.getElementById('modeBox'),
-    modeSmart: document.getElementById('modeSmart'),
     modeSelect: document.getElementById('modeSelect'),
     banner: document.getElementById('banner'),
     modalRoot: document.getElementById('modalRoot'),
@@ -70,8 +64,6 @@
     canvasOverlay: document.getElementById('canvasOverlay'),
     imgCount: document.getElementById('imgCount'),
     rightImgList: document.getElementById('rightImgList'),
-    trainBtn: document.getElementById('trainBtn'),
-    trainingStatus: document.getElementById('trainingStatus'),
     crumbFile: document.getElementById('crumbFile'),
     statusChip: document.getElementById('statusChip'),
     counterCur: document.getElementById('counterCur'),
@@ -124,14 +116,14 @@
     const r = await fetch(path, opts);
     if (!r.ok) {
       let detail = '';
-      try { detail = (await r.json()).description || ''; } catch { }
+      try { detail = (await r.json()).error || ''; } catch { }
       throw new Error('HTTP ' + r.status + (detail ? ': ' + detail : ''));
     }
     return r.json();
   }
 
   async function loadAnnotations() {
-    const d = await api('GET', '/api/models/' + encodeURIComponent(MODEL) + '/annotations');
+    const d = await api('GET', 'annotate.php?action=annotations&model=' + encodeURIComponent(MODEL));
     state.classes = d.data.classes || [];
     state.loadStatus = d.status;
     state.annMap = {};
@@ -152,126 +144,8 @@
     }
   }
 
-  // ── Training status + start ────────────────────────────────────────────────
-  async function loadTrainingStatus() {
-    try {
-      const d = await api('GET', '/api/models/' + encodeURIComponent(MODEL) + '/training/status');
-      state.training = {
-        ready: d.ready, doneCount: d.done_count, total: d.total,
-        available: d.available, error: d.error, latestRun: d.latest_run,
-      };
-    } catch (e) {
-      state.training = { ready: false, doneCount: 0, total: 0, available: false, error: e.message, latestRun: null };
-    }
-    renderTraining();
-    // If a previous run is still running, resume polling.
-    const r = state.training.latestRun;
-    if (r && (r.status === 'running' || r.status === 'starting')) {
-      pollRun(r.run_id);
-    }
-  }
-
-  function renderTraining() {
-    const t = state.training;
-    const r = t.latestRun;
-    const btn = el.trainBtn;
-    btn.classList.remove('done');
-    el.trainingStatus.className = 'training-status';
-
-    // Active run takes priority over readiness.
-    if (r && (r.status === 'running' || r.status === 'starting')) {
-      const cur = r.epoch_current || 0;
-      const tot = r.epoch_total || r.epochs || 0;
-      el.trainingStatus.textContent = 'Training… epoch ' + cur + ' / ' + tot;
-      el.trainingStatus.classList.add('running');
-      btn.disabled = true;
-      btn.textContent = 'Training…';
-      return;
-    }
-    if (r && r.status === 'failed') {
-      el.trainingStatus.textContent = 'Last run failed: ' + (r.error || 'unknown');
-      el.trainingStatus.classList.add('warn');
-    } else if (r && r.status === 'done' && r.best_pt) {
-      el.trainingStatus.innerHTML = 'Last run done · <a href="/api/models/' +
-        encodeURIComponent(MODEL) + '/training/runs/' + r.run_id + '/best.pt" download>download best.pt</a>';
-      el.trainingStatus.classList.add('ready');
-      btn.classList.add('done');
-    } else if (!t.available) {
-      el.trainingStatus.textContent = 'Training disabled: ' + (t.error || 'ultralytics not installed');
-      el.trainingStatus.classList.add('warn');
-    } else if (!t.ready) {
-      const left = Math.max(0, (t.total || 0) - (t.doneCount || 0));
-      el.trainingStatus.textContent = left
-        ? 'Annotate ' + left + ' more image(s) to enable training.'
-        : 'No images yet.';
-    } else {
-      el.trainingStatus.textContent = 'Ready · ' + t.doneCount + ' / ' + t.total + ' images done.';
-      el.trainingStatus.classList.add('ready');
-    }
-
-    btn.disabled = !(t.ready && t.available);
-    btn.textContent = 'Start Training';
-  }
-
-  async function startTraining() {
-    if (state.dirty) {
-      // Save before training so the latest annotations are exported.
-      await saveAnnotations(true);
-    }
-    el.trainBtn.disabled = true;
-    el.trainingStatus.textContent = 'Starting…';
-    el.trainingStatus.className = 'training-status running';
-    try {
-      const d = await api('POST', '/api/models/' + encodeURIComponent(MODEL) + '/training/start', {});
-      state.training.latestRun = d.run;
-      renderTraining();
-      pollRun(d.run.run_id);
-    } catch (e) {
-      el.trainingStatus.textContent = 'Start failed: ' + e.message;
-      el.trainingStatus.className = 'training-status warn';
-      el.trainBtn.disabled = false;
-    }
-  }
-
-  function pollRun(runId) {
-    clearTimeout(state.trainingPollTimer);
-    state.trainingPollTimer = setTimeout(async () => {
-      try {
-        const d = await api('GET', '/api/models/' + encodeURIComponent(MODEL) + '/training/runs/' + runId);
-        state.training.latestRun = d.run;
-        renderTraining();
-        if (d.run.status === 'running' || d.run.status === 'starting') {
-          pollRun(runId);
-        }
-      } catch (e) {
-        // Run may have been deleted; stop.
-      }
-    }, 3000);
-  }
-
-  async function loadSamStatus() {
-    try {
-      const d = await api('GET', '/api/sam/status');
-      state.samAvailable = !!d.available;
-      state.samError = d.error || null;
-    } catch (e) {
-      state.samAvailable = false;
-      state.samError = e.message;
-    }
-    el.modeSmart.disabled = !state.samAvailable;
-    if (!state.samAvailable && state.samError) {
-      const msg = 'Smart Polygon disabled: ' + state.samError + '. Manual tools still work.';
-      if (el.banner.style.display === 'block') {
-        el.banner.textContent = el.banner.textContent + ' · ' + msg;
-      } else {
-        el.banner.style.display = 'block';
-        el.banner.textContent = msg;
-      }
-    }
-  }
-
   async function loadImageList() {
-    const d = await api('GET', '/api/models/' + encodeURIComponent(MODEL) + '/images');
+    const d = await api('GET', 'annotate.php?action=images&model=' + encodeURIComponent(MODEL));
     state.allImages = d.images.map(img => ({
       file: img.file,
       status: (state.annMap[img.file] && state.annMap[img.file].status) || img.status || 'unlabeled',
@@ -285,7 +159,7 @@
     if (!f) return;
     const newState = !state.reviewedSet.has(f);
     try {
-      const d = await api('POST', '/api/models/' + encodeURIComponent(MODEL) + '/images/' + encodeURIComponent(f) + '/reviewed', { reviewed: newState });
+      const d = await api('POST', 'annotate.php?action=reviewed&model=' + encodeURIComponent(MODEL) + '&file=' + encodeURIComponent(f), { reviewed: newState });
       if (d.reviewed) state.reviewedSet.add(f); else state.reviewedSet.delete(f);
       renderNav();
     } catch (e) {
@@ -309,7 +183,7 @@
     el.saveBtn.disabled = true;
     if (!silent) setSaveStatus('Saving…');
     try {
-      await api('PUT', '/api/models/' + encodeURIComponent(MODEL) + '/annotations', payload);
+      await api('POST', 'annotate.php?action=save_annotations&model=' + encodeURIComponent(MODEL), payload);
       clearDirty();
       if (!silent) {
         setSaveStatus('Saved.', 'ok');
@@ -503,8 +377,7 @@
       row.className = 'unused-row';
       row.innerHTML =
         '<span class="class-dot" style="background:' + (cls.color || classColor(cls.id)) + '"></span>' +
-        '<span>' + escapeHTML(cls.name) + '</span>' +
-        '<span class="wand" title="Auto-find (coming soon)">✦</span>';
+        '<span>' + escapeHTML(cls.name) + '</span>';
       el.unusedList.appendChild(row);
     });
   }
@@ -934,21 +807,6 @@
       });
     }
 
-    // SAM preview
-    if (state.drawing && state.drawing.type === 'sam') {
-      const d = state.drawing;
-      const col = classColor(d.classId);
-      const flat = [];
-      d.points.forEach(p => flat.push(p.x, p.y));
-      drawLayer.add(new Konva.Line({
-        points: flat, closed: true, stroke: col, strokeWidth: 2,
-        fill: col + '4d', dash: [6, 4],
-      }));
-      d.points.forEach(p => {
-        drawLayer.add(new Konva.Circle({ x: p.x, y: p.y, radius: 3, fill: col }));
-      });
-    }
-
     // In-progress box
     if (state.drawing && state.drawing.type === 'box' && state.drawing.w > 0 && state.drawing.h > 0) {
       const col = classColor(state.drawing.classId);
@@ -988,8 +846,6 @@
     markDirty();
     renderNav();
     await saveAnnotations(false);
-    // The 'all done' gate may have just flipped — refresh training status.
-    loadTrainingStatus();
   }
 
   function deleteSelected() {
@@ -1007,58 +863,16 @@
     state.drawing = null;
     state.selection = null;
     boxDragStart = null;
-    [el.modePolygon, el.modeBox, el.modeSmart, el.modeSelect].forEach(b => b.classList.remove('active'));
+    [el.modePolygon, el.modeBox, el.modeSelect].forEach(b => b.classList.remove('active'));
     if (m === 'polygon') el.modePolygon.classList.add('active');
     if (m === 'box') el.modeBox.classList.add('active');
-    if (m === 'sam') el.modeSmart.classList.add('active');
     if (m === 'select') el.modeSelect.classList.add('active');
     setDrawStatus(
       m === 'polygon' ? 'Polygon mode · Click to add vertices · Double-click to close · Esc to cancel' :
       m === 'box' ? 'Box mode · Drag to draw a rectangle · Esc to cancel' :
-      m === 'sam' ? 'Smart mode · Click an object · Wait for SAM · Enter to keep, Esc to discard' :
       'Select mode · Click an annotation to edit · Delete to remove'
     );
     redraw();
-  }
-
-  async function runSamAt(p) {
-    el.canvasOverlay.classList.remove('error');
-    el.canvasOverlay.textContent = 'Predicting…';
-    el.canvasOverlay.style.display = 'flex';
-    try {
-      const body = { model: MODEL, image: currentFile(), point: [Math.round(p.x), Math.round(p.y)] };
-      const d = await api('POST', '/api/sam/predict', body);
-      const points = (d.polygon || []).map(([x, y]) => ({ x, y }));
-      if (points.length < 3) throw new Error('polygon too small');
-      state.drawing = { type: 'sam', classId: state.selectedClass, points, score: d.score };
-      setDrawStatus('SAM preview · Enter to keep · Esc to discard · Score ' + (d.score || 0).toFixed(2));
-      el.canvasOverlay.style.display = 'none';
-      redraw();
-    } catch (e) {
-      el.canvasOverlay.classList.add('error');
-      el.canvasOverlay.textContent = 'SAM failed: ' + e.message;
-      setTimeout(() => { el.canvasOverlay.style.display = 'none'; }, 2000);
-    }
-  }
-
-  function commitSamPreview() {
-    const d = state.drawing;
-    if (!d || d.type !== 'sam' || d.points.length < 3) {
-      state.drawing = null; redraw(); return;
-    }
-    const ann = currentAnn();
-    ann.segments.push({
-      id: shortId('s'),
-      classId: d.classId,
-      source: 'sam',
-      points: d.points.map(p => ({ x: Math.round(p.x), y: Math.round(p.y) })),
-    });
-    if (ann.status === 'unlabeled') ann.status = 'in-progress';
-    state.allImages[state.currentIndex].status = ann.status;
-    state.drawing = null;
-    markDirty();
-    renderSidebar(); renderNav(); redraw();
-    setDrawStatus('SAM polygon saved. Click again for another.');
   }
 
   // ── Annotation editor popup (right-click / dbl-click on a region) ─────────
@@ -1201,11 +1015,6 @@
         addPolygonVertex(p);
         return;
       }
-      if (state.mode === 'sam') {
-        if (state.drawing) return;
-        runSamAt(p);
-        return;
-      }
       if (state.mode === 'select') {
         // Clicking empty stage deselects (clicks on shapes are handled by the shape's own click handler).
         if (evt && evt.target === stage && state.selection) {
@@ -1254,7 +1063,6 @@
     if (e.key === 'Delete' && state.selection) { deleteSelected(); return; }
     if (e.key === 'Enter' && state.drawing) {
       if (state.drawing.type === 'polygon') commitPolygon();
-      else if (state.drawing.type === 'sam') commitSamPreview();
       return;
     }
     if (e.key === 'ArrowLeft') { e.preventDefault(); navigateImage(-1); return; }
@@ -1263,11 +1071,6 @@
     if (e.key === 'p' || e.key === 'P') { setMode('polygon'); return; }
     if (e.key === 'b' || e.key === 'B') { setMode('box'); return; }
     if (e.key === 'v' || e.key === 'V') { setMode('select'); return; }
-    if (e.key === 's' || e.key === 'S') {
-      if ((e.ctrlKey || e.metaKey)) return; // Ctrl+S handled below
-      if (state.samAvailable) setMode('sam');
-      return;
-    }
     if (/^[1-9]$/.test(e.key)) {
       const idx = parseInt(e.key, 10) - 1;
       if (state.classes[idx]) { state.selectedClass = state.classes[idx].id; renderClassList(); }
@@ -1281,7 +1084,6 @@
   // ── Button wiring ─────────────────────────────────────────────────────────
   el.modePolygon.addEventListener('click', () => setMode('polygon'));
   el.modeBox.addEventListener('click', () => setMode('box'));
-  el.modeSmart.addEventListener('click', () => { if (state.samAvailable) setMode('sam'); });
   el.modeSelect.addEventListener('click', () => setMode('select'));
   el.saveBtn.addEventListener('click', () => saveAnnotations(false));
   el.prevBtn.addEventListener('click', () => navigateImage(-1));
@@ -1289,12 +1091,6 @@
   el.markDoneBtn.addEventListener('click', markCurrentDone);
   el.classAddBtn.addEventListener('click', () => openClassModal(null));
   el.reviewedBtn.addEventListener('click', toggleReviewed);
-  el.trainBtn.addEventListener('click', startTraining);
-
-  el.findAiBtn.addEventListener('click', () => {
-    setSaveStatus('Find Objects with AI: coming soon (needs YOLO model).', 'warn');
-    setTimeout(() => { if (el.saveStatus.textContent.startsWith('Find Objects')) setSaveStatus(''); }, 3000);
-  });
 
   // Tabs
   el.tabs.forEach(btn => {
@@ -1330,8 +1126,6 @@
     try {
       await loadAnnotations();
       await loadImageList();
-      await loadSamStatus();
-      await loadTrainingStatus();
       renderClassList();
       renderSidebar();
       renderTags();
