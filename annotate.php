@@ -613,7 +613,7 @@ function renderAnnotator(string $model): void {
     'room'  => SMART_WS_ROOM,
   ], JSON_UNESCAPED_SLASHES) ?>;
 </script>
-<script src="https://unpkg.com/konva@9.3.16/konva.min.js"></script>
+<script src="annotate/konva.min.js"></script>
 <script src="annotate/annotator.js"></script>
 
 </body>
