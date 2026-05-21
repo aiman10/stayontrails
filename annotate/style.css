@@ -190,7 +190,7 @@ a:focus-visible,button:focus-visible{outline:3px solid var(--focus);outline-offs
 
 /* Smart Select mode button + floating panel */
 #modeSmart.active{background:rgba(124,58,237,.22);border-color:#7C3AED;color:#c4b5fd}
-.smart-panel{position:fixed;top:120px;left:24px;z-index:55;width:260px;background:#0f172a;border:1px solid var(--line);border-radius:14px;padding:14px;color:#fff;box-shadow:0 10px 30px rgba(0,0,0,.5)}
+.smart-panel{position:fixed;z-index:55;width:260px;background:#0f172a;border:1px solid var(--line);border-radius:14px;padding:14px;color:#fff;box-shadow:0 10px 30px rgba(0,0,0,.5)}
 .smart-head{font-size:13px;font-weight:700;display:flex;align-items:center;margin-bottom:10px}
 .smart-head .pop-x{margin-left:auto;cursor:pointer;background:none;border:0;color:var(--muted);font-size:16px}
 .smart-head .pop-x:hover{color:#fff}

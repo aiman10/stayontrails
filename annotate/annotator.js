@@ -248,6 +248,15 @@
     el.smartStatus.className = 'smart-status' + (tone ? ' ' + tone : '');
   }
 
+  // Anchor the popup just under the Smart toolbar button, clamped to the viewport.
+  function positionSmartPanel() {
+    const r = el.modeSmart.getBoundingClientRect();
+    const panelW = 260;
+    const left = Math.max(8, Math.min(r.left, window.innerWidth - panelW - 8));
+    el.smartPanel.style.top = (r.bottom + 6) + 'px';
+    el.smartPanel.style.left = left + 'px';
+  }
+
   function isPointPair(value) {
     return Array.isArray(value) && value.length >= 2
       && Number.isFinite(Number(value[0])) && Number.isFinite(Number(value[1]));
@@ -1127,6 +1136,7 @@
     if (m === 'select') el.modeSelect.classList.add('active');
 
     if (m === 'smart') {
+      positionSmartPanel();
       el.smartPanel.style.display = 'block';
       smartClear();
       smartDetect();
@@ -1360,8 +1370,16 @@
   // ── Button wiring ─────────────────────────────────────────────────────────
   el.modePolygon.addEventListener('click', () => setMode('polygon'));
   el.modeBox.addEventListener('click', () => setMode('box'));
-  el.modeSmart.addEventListener('click', () => setMode('smart'));
+  el.modeSmart.addEventListener('click', () => setMode(state.mode === 'smart' ? 'select' : 'smart'));
   el.modeSelect.addEventListener('click', () => setMode('select'));
+
+  // Close the Smart popup when clicking anywhere outside it (but not on the
+  // Smart button, which toggles it itself).
+  document.addEventListener('mousedown', (e) => {
+    if (state.mode !== 'smart') return;
+    if (el.smartPanel.contains(e.target) || el.modeSmart.contains(e.target)) return;
+    setMode('select');
+  });
 
   // Smart Select panel
   el.smartClose.addEventListener('click', () => setMode('select'));
