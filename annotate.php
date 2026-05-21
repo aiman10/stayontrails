@@ -16,9 +16,11 @@
 
 const SCHEMA_VERSION = 2;
 
-// Smart Select inference sidecar (smart-select/server.py). Override with env.
-$SMART_URL   = getenv('SMART_URL') ?: 'http://127.0.0.1:5002';
-$MODELS_DIR  = __DIR__ . DIRECTORY_SEPARATOR . 'models';
+// Online segmentation server (same one production Follow Path uses). Smart
+// Select talks to it directly from the browser; these are surfaced to the page.
+const SMART_WS_URL   = 'wss://signaling.ehb.be';
+const SMART_WS_TOKEN = 'LTddk_ptxQX-omdw5B5rfpniA2wB-19KBxFaKuODMzw';
+const SMART_WS_ROOM  = '/ws/pathnavigation';
 
 $DEFAULT_PALETTE = ['#7C3AED', '#06D6A0', '#F4A261', '#EF476F', '#22d3ee', '#facc15'];
 $DEFAULT_CLASSES = [
@@ -218,44 +220,6 @@ function toYoloLabelLines(array $image, array $classIdMap, int $imgW = 640, int 
     return $lines;
 }
 
-// ── Smart Select proxy ───────────────────────────────────────────────────────
-function listPtModels(string $modelsDir): array {
-    if (!is_dir($modelsDir)) return [];
-    return array_values(array_map('basename', glob($modelsDir . DIRECTORY_SEPARATOR . '*.pt') ?: []));
-}
-
-/**
- * Forward a JSON payload to the inference sidecar and relay its response
- * verbatim. On connection failure, returns a 503 so the UI can degrade.
- */
-function proxySmart(string $endpoint, array $payload): void {
-    global $SMART_URL;
-    $url  = rtrim($SMART_URL, '/') . $endpoint;
-    $json = json_encode($payload, JSON_UNESCAPED_SLASHES);
-
-    $ch = curl_init($url);
-    curl_setopt_array($ch, [
-        CURLOPT_POST           => true,
-        CURLOPT_POSTFIELDS     => $json,
-        CURLOPT_HTTPHEADER     => ['Content-Type: application/json'],
-        CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_TIMEOUT        => 120,
-        CURLOPT_CONNECTTIMEOUT => 3,
-    ]);
-    $resp = curl_exec($ch);
-    if ($resp === false) {
-        $err = curl_error($ch);
-        curl_close($ch);
-        jsonError('Smart Select service not reachable (' . $err . '). Start smart-select/run.bat.', 503);
-    }
-    $code = curl_getinfo($ch, CURLINFO_HTTP_CODE) ?: 502;
-    curl_close($ch);
-    http_response_code($code);
-    header('Content-Type: application/json; charset=utf-8');
-    echo $resp;
-    exit;
-}
-
 function listModels(string $captureRoot): array {
     if (!is_dir($captureRoot)) return [];
     $out = [];
@@ -273,12 +237,6 @@ function listModels(string $captureRoot): array {
 // ── JSON API ─────────────────────────────────────────────────────────────────
 $action = $_GET['action'] ?? '';
 if ($action !== '') {
-    // List available YOLO .pt models for the Smart Select dropdown. This is a
-    // local directory scan, so it works even when the sidecar is down.
-    if ($action === 'models') {
-        jsonResponse(['ok' => true, 'models' => listPtModels($MODELS_DIR)]);
-    }
-
     $model = slugifyName($_GET['model'] ?? '');
     if ($model === '') jsonError('Invalid model.', 400);
     $modelDir = $captureRoot . DIRECTORY_SEPARATOR . $model;
@@ -414,34 +372,6 @@ if ($action !== '') {
         readfile($tmpFile);
         unlink($tmpFile);
         exit;
-    }
-
-    // Smart Select: resolve + validate the image path, then proxy to the sidecar.
-    if (in_array($action, ['smart_detect', 'smart_pick', 'smart_simplify'], true) && $method === 'POST') {
-        $body = json_decode(file_get_contents('php://input'), true);
-        if (!is_array($body)) jsonError('Body must be a JSON object.', 400);
-
-        $image = (string) ($body['image'] ?? '');
-        if (!isSafeFilename($image)) jsonError('Invalid filename.', 400);
-        $imagePath = $modelDir . DIRECTORY_SEPARATOR . $image;
-        if (!is_file($imagePath)) jsonError('Image not found.', 404);
-
-        $ptModel = basename((string) ($body['model'] ?? ''));
-        if (!in_array($ptModel, listPtModels($MODELS_DIR), true)) {
-            jsonError("YOLO model '$ptModel' not found in models/.", 404);
-        }
-
-        // Forward everything from the client plus the resolved absolute path.
-        $payload = $body;
-        $payload['image_path'] = $imagePath;
-        $payload['model'] = $ptModel;
-
-        $endpoint = [
-            'smart_detect'   => '/api/smart_select/detect',
-            'smart_pick'     => '/api/smart_select/pick',
-            'smart_simplify' => '/api/smart_select/simplify',
-        ][$action];
-        proxySmart($endpoint, $payload);
     }
 
     jsonError('Unknown action.', 404);
@@ -654,23 +584,35 @@ function renderAnnotator(string $model): void {
 <div class="smart-panel" id="smartPanel" style="display:none">
   <div class="smart-head">✨ Smart Select <button class="pop-x" id="smartClose" type="button">×</button></div>
   <label class="smart-label">Model</label>
-  <select id="smartModel" class="smart-select"></select>
-  <div class="smart-status" id="smartStatus">Loading…</div>
-  <div class="smart-hint">Click an object to select it. Click another to add it; click a selected one to remove it.</div>
+  <select id="smartModel" class="smart-select">
+    <option value="unrealsim">unrealsim</option>
+    <option value="laerbeekbos" selected>laerbeekbos</option>
+    <option value="kaai">kaai</option>
+    <option value="denham">denham</option>
+  </select>
+  <div class="smart-status" id="smartStatus">…</div>
+  <div class="smart-hint">Detects trail/path polygons via the online model. Review the green preview, then Add to keep them as editable annotations.</div>
   <label class="smart-label">Simplify</label>
   <input type="range" id="smartSimplify" min="0" max="4" step="1" value="2" class="smart-slider" />
   <div class="smart-slider-labels"><span>Simple</span><span>Complex</span></div>
   <div class="smart-actions">
-    <button class="btn" id="smartUndo" type="button" title="Undo last click">↩ Undo</button>
-    <button class="btn btn-warn" id="smartDelete" type="button">Delete</button>
-    <button class="btn btn-cyan" id="smartFinish" type="button">Finish (Enter)</button>
+    <button class="btn btn-cyan" id="smartDetect" type="button">✨ Detect</button>
+    <button class="btn btn-warn" id="smartDelete" type="button">Clear</button>
+    <button class="btn btn-done" id="smartFinish" type="button">Add (Enter)</button>
   </div>
 </div>
 
 <div id="modalRoot"></div>
 <div id="popupRoot"></div>
 
-<script>window.MODEL = <?= json_encode($model) ?>;</script>
+<script>
+  window.MODEL = <?= json_encode($model) ?>;
+  window.SMART_WS = <?= json_encode([
+    'url'   => SMART_WS_URL,
+    'token' => SMART_WS_TOKEN,
+    'room'  => SMART_WS_ROOM,
+  ], JSON_UNESCAPED_SLASHES) ?>;
+</script>
 <script src="https://unpkg.com/konva@9.3.16/konva.min.js"></script>
 <script src="annotate/annotator.js"></script>
 
