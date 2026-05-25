@@ -90,6 +90,7 @@
     tabs: Array.from(document.querySelectorAll('.tab')),
     exportBtn: document.getElementById('exportBtn'),
     exportStatus: document.getElementById('exportStatus'),
+    deleteModelBtn: document.getElementById('deleteModelBtn'),
   };
 
   // ── Helpers ───────────────────────────────────────────────────────────────
@@ -972,17 +973,29 @@
       if (isSelected && state.mode === 'select') {
         seg.points.forEach((pt, vi) => {
           // 8x8 white square handle, centered on the vertex.
+          // Drag to move · right-click to delete (min 3 points kept).
           const handle = new Konva.Rect({
             x: pt.x - 4, y: pt.y - 4, width: 8, height: 8,
             fill: '#fff', stroke: '#222', strokeWidth: 1,
             draggable: true,
           });
+          handle.on('mouseenter', () => { document.body.style.cursor = seg.points.length > 3 ? 'context-menu' : 'default'; });
+          handle.on('mouseleave', () => { document.body.style.cursor = 'default'; });
           handle.on('dragmove', () => {
             seg.points[vi] = { x: Math.round(handle.x() + 4), y: Math.round(handle.y() + 4) };
             line.points([].concat(...seg.points.map(p => [p.x, p.y])));
             markDirty();
           });
           handle.on('dragend', () => { renderSidebar(); });
+          handle.on('mousedown', e => {
+            if (e.evt.button !== 2) return;      // right-click only
+            e.cancelBubble = true;               // don't bubble to stage
+            e.evt.preventDefault();
+            if (seg.points.length <= 3) return;  // polygon needs at least 3 points
+            seg.points.splice(vi, 1);
+            markDirty();
+            renderSidebar(); redraw();
+          });
           annLayer.add(handle);
         });
       }
@@ -1396,6 +1409,23 @@
   });
   el.exportBtn.addEventListener('click', () => {
     window.location.href = 'annotate.php?action=export_dataset&model=' + encodeURIComponent(MODEL);
+  });
+  el.deleteModelBtn.addEventListener('click', async () => {
+    const count = state.allImages.length;
+    const msg = 'Delete model "' + MODEL + '"?\n\n'
+      + 'This will permanently delete ' + count + ' image(s) and all annotations.\n'
+      + 'This cannot be undone.';
+    if (!confirm(msg)) return;
+    try {
+      el.deleteModelBtn.disabled = true;
+      el.deleteModelBtn.textContent = 'Deleting…';
+      await api('POST', 'annotate.php?action=delete_model&model=' + encodeURIComponent(MODEL), {});
+      window.location.href = 'annotate.php';
+    } catch (e) {
+      el.deleteModelBtn.disabled = false;
+      el.deleteModelBtn.textContent = '🗑 Delete Model';
+      setSaveStatus('Delete failed: ' + e.message, 'warn');
+    }
   });
   el.saveBtn.addEventListener('click', () => saveAnnotations(false));
   el.prevBtn.addEventListener('click', () => navigateImage(-1));

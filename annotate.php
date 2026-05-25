@@ -220,6 +220,15 @@ function toYoloLabelLines(array $image, array $classIdMap, int $imgW = 640, int 
     return $lines;
 }
 
+function deleteDirectory(string $dir): void {
+    foreach (glob($dir . '/*') ?: [] as $item) {
+        is_dir($item) ? deleteDirectory($item) : unlink($item);
+    }
+    if (!rmdir($dir)) {
+        throw new RuntimeException("Could not remove directory '$dir'.");
+    }
+}
+
 function listModels(string $captureRoot): array {
     if (!is_dir($captureRoot)) return [];
     $out = [];
@@ -372,6 +381,15 @@ if ($action !== '') {
         readfile($tmpFile);
         unlink($tmpFile);
         exit;
+    }
+
+    if ($action === 'delete_model' && $method === 'POST') {
+        try {
+            deleteDirectory($modelDir);
+        } catch (RuntimeException $e) {
+            jsonError($e->getMessage(), 500);
+        }
+        jsonResponse(['ok' => true]);
     }
 
     jsonError('Unknown action.', 404);
@@ -574,6 +592,10 @@ function renderAnnotator(string $model): void {
         <div class="sectionTitle" style="margin-bottom:6px">Export</div>
         <div class="export-status" id="exportStatus">Annotate all images to unlock.</div>
         <button class="btn export-btn" id="exportBtn" type="button" disabled>⬇ Download ZIP</button>
+      </div>
+
+      <div class="delete-model-box">
+        <button class="btn btn-warn delete-model-btn" id="deleteModelBtn" type="button">🗑 Delete Model</button>
       </div>
 
     </div>
