@@ -6,38 +6,46 @@
  * event wiring → init.
  */
 (function () {
-  'use strict';
+  "use strict";
 
   const MODEL = window.MODEL;
-  const IMG_BASE = 'recorded_routes/' + MODEL + '/';
+  const IMG_BASE = "recorded_routes/" + MODEL + "/";
 
   // ── Constants ──────────────────────────────────────────────────────────────
   // Fixed palette: 0 path-oxod, 1 grass, 2 puddle, 3 road. Extras for added classes.
-  const PALETTE = ['#7C3AED', '#06D6A0', '#F4A261', '#EF476F', '#22d3ee', '#facc15'];
-  const IMG_W = 640, IMG_H = 480;
+  const PALETTE = [
+    "#7C3AED",
+    "#06D6A0",
+    "#F4A261",
+    "#EF476F",
+    "#22d3ee",
+    "#facc15",
+  ];
+  const IMG_W = 640,
+    IMG_H = 480;
 
   // ── State ─────────────────────────────────────────────────────────────────
   const state = {
-    allImages: [],           // [{file, status}]
-    annMap: {},              // file -> {status, segments:[], boxes:[]}
-    classes: [],             // [{id, name, color}]
+    allImages: [], // [{file, status}]
+    annMap: {}, // file -> {status, segments:[], boxes:[]}
+    classes: [], // [{id, name, color}]
     currentIndex: -1,
     selectedClass: 0,
-    mode: 'polygon',         // 'polygon' | 'box' | 'select' | 'smart'
-    selection: null,         // {type:'segment'|'box', idx:number} | null
-    drawing: null,           // current in-progress shape
+    mode: "polygon", // 'polygon' | 'box' | 'select' | 'smart'
+    selection: null, // {type:'segment'|'box', idx:number} | null
+    drawing: null, // current in-progress shape
     dirty: false,
-    loadStatus: 'ok',        // 'ok' | 'missing' | 'corrupt' | 'future'
-    tab: 'classes',                // 'classes' | 'layers'
-    layerVisibility: {},           // regionId -> bool (true = visible)
-    classFilter: null,             // when set in classes tab: highlight only this class id
-    reviewedSet: new Set(),        // filenames marked reviewed (for nav lookup)
-    tags: [],                      // UI only, not persisted
+    loadStatus: "ok", // 'ok' | 'missing' | 'corrupt' | 'future'
+    tab: "classes", // 'classes' | 'layers'
+    layerVisibility: {}, // regionId -> bool (true = visible)
+    classFilter: null, // when set in classes tab: highlight only this class id
+    reviewedSet: new Set(), // filenames marked reviewed (for nav lookup)
+    tags: [], // UI only, not persisted
     smart: {
-      model: null,                 // selected online model name
+      model: null, // selected online model name
       busy: false,
-      raw: [],                     // full-detail polygons from the server: array of {points:[{x,y}]}
-      preview: [],                 // raw simplified by the Simplify slider (what gets committed)
+      raw: [], // full-detail polygons from the server: array of {points:[{x,y}]}
+      preview: [], // raw simplified by the Simplify slider (what gets committed)
     },
   };
 
@@ -47,82 +55,100 @@
 
   // ── DOM refs ──────────────────────────────────────────────────────────────
   const el = {
-    canvasWrap: document.getElementById('canvasWrap'),
-    canvasIdle: document.getElementById('canvasIdle'),
-    stageDiv: document.getElementById('stage'),
-    classList: document.getElementById('classList'),
-    classAddBtn: document.getElementById('classAddBtn'),
-    segCount: document.getElementById('segCount'),
-    groupName: document.getElementById('groupName'),
-    tabBody: document.getElementById('tabBody'),
-    unusedList: document.getElementById('unusedList'),
-    tagsList: document.getElementById('tagsList'),
-    tagsInput: document.getElementById('tagsInput'),
-    drawStatus: document.getElementById('drawStatus'),
-    saveStatus: document.getElementById('saveStatus'),
-    saveBtn: document.getElementById('saveBtn'),
-    prevBtn: document.getElementById('prevBtn'),
-    nextBtn: document.getElementById('nextBtn'),
-    markDoneBtn: document.getElementById('markDoneBtn'),
-    reviewedBtn: document.getElementById('reviewedBtn'),
-    modePolygon: document.getElementById('modePolygon'),
-    modeBox: document.getElementById('modeBox'),
-    modeSmart: document.getElementById('modeSmart'),
-    modeSelect: document.getElementById('modeSelect'),
-    smartPanel: document.getElementById('smartPanel'),
-    smartModel: document.getElementById('smartModel'),
-    smartStatus: document.getElementById('smartStatus'),
-    smartSimplify: document.getElementById('smartSimplify'),
-    smartDetect: document.getElementById('smartDetect'),
-    smartDelete: document.getElementById('smartDelete'),
-    smartFinish: document.getElementById('smartFinish'),
-    smartClose: document.getElementById('smartClose'),
-    banner: document.getElementById('banner'),
-    modalRoot: document.getElementById('modalRoot'),
-    popupRoot: document.getElementById('popupRoot'),
-    canvasOverlay: document.getElementById('canvasOverlay'),
-    imgCount: document.getElementById('imgCount'),
-    rightImgList: document.getElementById('rightImgList'),
-    crumbFile: document.getElementById('crumbFile'),
-    statusChip: document.getElementById('statusChip'),
-    counterCur: document.getElementById('counterCur'),
-    counterTot: document.getElementById('counterTot'),
-    tabs: Array.from(document.querySelectorAll('.tab')),
-    exportBtn: document.getElementById('exportBtn'),
-    exportStatus: document.getElementById('exportStatus'),
-    deleteModelBtn: document.getElementById('deleteModelBtn'),
+    canvasWrap: document.getElementById("canvasWrap"),
+    canvasIdle: document.getElementById("canvasIdle"),
+    stageDiv: document.getElementById("stage"),
+    classList: document.getElementById("classList"),
+    classAddBtn: document.getElementById("classAddBtn"),
+    segCount: document.getElementById("segCount"),
+    groupName: document.getElementById("groupName"),
+    tabBody: document.getElementById("tabBody"),
+    unusedList: document.getElementById("unusedList"),
+    tagsList: document.getElementById("tagsList"),
+    tagsInput: document.getElementById("tagsInput"),
+    drawStatus: document.getElementById("drawStatus"),
+    saveStatus: document.getElementById("saveStatus"),
+    saveBtn: document.getElementById("saveBtn"),
+    prevBtn: document.getElementById("prevBtn"),
+    nextBtn: document.getElementById("nextBtn"),
+    saveContinueBtn: document.getElementById("saveContinueBtn"),
+    modePolygon: document.getElementById("modePolygon"),
+    modeBox: document.getElementById("modeBox"),
+    modeSmart: document.getElementById("modeSmart"),
+    modeSelect: document.getElementById("modeSelect"),
+    smartPanel: document.getElementById("smartPanel"),
+    smartModel: document.getElementById("smartModel"),
+    smartStatus: document.getElementById("smartStatus"),
+    smartSimplify: document.getElementById("smartSimplify"),
+    smartDetect: document.getElementById("smartDetect"),
+    smartDelete: document.getElementById("smartDelete"),
+    smartFinish: document.getElementById("smartFinish"),
+    smartClose: document.getElementById("smartClose"),
+    banner: document.getElementById("banner"),
+    modalRoot: document.getElementById("modalRoot"),
+    popupRoot: document.getElementById("popupRoot"),
+    canvasOverlay: document.getElementById("canvasOverlay"),
+    imgCount: document.getElementById("imgCount"),
+    rightImgList: document.getElementById("rightImgList"),
+    crumbFile: document.getElementById("crumbFile"),
+    statusChip: document.getElementById("statusChip"),
+    counterCur: document.getElementById("counterCur"),
+    counterTot: document.getElementById("counterTot"),
+    tabs: Array.from(document.querySelectorAll(".tab")),
+    exportBtn: document.getElementById("exportBtn"),
+    exportStatus: document.getElementById("exportStatus"),
+    deleteModelBtn: document.getElementById("deleteModelBtn"),
   };
 
   // ── Helpers ───────────────────────────────────────────────────────────────
   function classColor(id) {
-    const cls = state.classes.find(c => c.id === id);
+    const cls = state.classes.find((c) => c.id === id);
     return (cls && cls.color) || PALETTE[id % PALETTE.length];
   }
   function className(id) {
-    const cls = state.classes.find(c => c.id === id);
-    return cls ? cls.name : 'class ' + id;
+    const cls = state.classes.find((c) => c.id === id);
+    return cls ? cls.name : "class " + id;
   }
   function currentFile() {
-    return state.currentIndex >= 0 ? state.allImages[state.currentIndex].file : null;
+    return state.currentIndex >= 0
+      ? state.allImages[state.currentIndex].file
+      : null;
   }
   function currentAnn() {
     const f = currentFile();
     if (!f) return null;
-    if (!state.annMap[f]) state.annMap[f] = { status: 'unlabeled', segments: [], boxes: [] };
+    if (!state.annMap[f])
+      state.annMap[f] = { status: "unlabeled", segments: [], boxes: [] };
     return state.annMap[f];
   }
   function shortId(prefix) {
-    return prefix + '-' + Math.random().toString(36).slice(2, 8);
+    return prefix + "-" + Math.random().toString(36).slice(2, 8);
   }
   function setSaveStatus(msg, tone) {
     el.saveStatus.textContent = msg;
-    el.saveStatus.className = tone || '';
+    el.saveStatus.className = tone || "";
   }
-  function setDrawStatus(msg) { el.drawStatus.textContent = msg; }
-  function markDirty() { state.dirty = true; }
-  function clearDirty() { state.dirty = false; }
+  function setDrawStatus(msg) {
+    el.drawStatus.textContent = msg;
+  }
+  function markDirty() {
+    state.dirty = true;
+  }
+  function clearDirty() {
+    state.dirty = false;
+  }
   function escapeHTML(s) {
-    return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    return String(s).replace(
+      /[&<>"']/g,
+      (c) =>
+        ({
+          "&": "&amp;",
+          "<": "&lt;",
+          ">": "&gt;",
+          '"': "&quot;",
+          "'": "&#39;",
+        })[c],
+    );
   }
   function distance(ax, ay, bx, by) {
     return Math.hypot(ax - bx, ay - by);
@@ -132,47 +158,62 @@
   async function api(method, path, body) {
     const opts = { method, headers: {} };
     if (body !== undefined) {
-      opts.headers['Content-Type'] = 'application/json';
+      opts.headers["Content-Type"] = "application/json";
       opts.body = JSON.stringify(body);
     }
     const r = await fetch(path, opts);
     if (!r.ok) {
-      let detail = '';
-      try { detail = (await r.json()).error || ''; } catch { }
-      throw new Error('HTTP ' + r.status + (detail ? ': ' + detail : ''));
+      let detail = "";
+      try {
+        detail = (await r.json()).error || "";
+      } catch {}
+      throw new Error("HTTP " + r.status + (detail ? ": " + detail : ""));
     }
     return r.json();
   }
 
   async function loadAnnotations() {
-    const d = await api('GET', 'annotate.php?action=annotations&model=' + encodeURIComponent(MODEL));
+    const d = await api(
+      "GET",
+      "annotate.php?action=annotations&model=" + encodeURIComponent(MODEL),
+    );
     state.classes = d.data.classes || [];
     state.loadStatus = d.status;
     state.annMap = {};
-    for (const img of (d.data.images || [])) {
+    for (const img of d.data.images || []) {
       state.annMap[img.file] = {
-        status: img.status || 'unlabeled',
+        status: img.status || "unlabeled",
         segments: (img.annotations && img.annotations.segments) || [],
         boxes: (img.annotations && img.annotations.boxes) || [],
       };
     }
-    if (d.status === 'corrupt') {
-      el.banner.style.display = 'block';
-      el.banner.textContent = 'annotations.json was unreadable. Showing defaults; the bad file will be moved aside on first save.';
-    } else if (d.status === 'future') {
-      el.banner.style.display = 'block';
-      el.banner.textContent = 'annotations.json was written by a newer version. Read-only mode.';
+    if (d.status === "corrupt") {
+      el.banner.style.display = "block";
+      el.banner.textContent =
+        "annotations.json was unreadable. Showing defaults; the bad file will be moved aside on first save.";
+    } else if (d.status === "future") {
+      el.banner.style.display = "block";
+      el.banner.textContent =
+        "annotations.json was written by a newer version. Read-only mode.";
       el.saveBtn.disabled = true;
     }
   }
 
   async function loadImageList() {
-    const d = await api('GET', 'annotate.php?action=images&model=' + encodeURIComponent(MODEL));
-    state.allImages = d.images.map(img => ({
+    const d = await api(
+      "GET",
+      "annotate.php?action=images&model=" + encodeURIComponent(MODEL),
+    );
+    state.allImages = d.images.map((img) => ({
       file: img.file,
-      status: (state.annMap[img.file] && state.annMap[img.file].status) || img.status || 'unlabeled',
+      status:
+        (state.annMap[img.file] && state.annMap[img.file].status) ||
+        img.status ||
+        "unlabeled",
     }));
-    state.reviewedSet = new Set(d.images.filter(i => i.reviewed).map(i => i.file));
+    state.reviewedSet = new Set(
+      d.images.filter((i) => i.reviewed).map((i) => i.file),
+    );
     renderNav();
   }
 
@@ -181,38 +222,62 @@
     if (!f) return;
     const newState = !state.reviewedSet.has(f);
     try {
-      const d = await api('POST', 'annotate.php?action=reviewed&model=' + encodeURIComponent(MODEL) + '&file=' + encodeURIComponent(f), { reviewed: newState });
-      if (d.reviewed) state.reviewedSet.add(f); else state.reviewedSet.delete(f);
+      const d = await api(
+        "POST",
+        "annotate.php?action=reviewed&model=" +
+          encodeURIComponent(MODEL) +
+          "&file=" +
+          encodeURIComponent(f),
+        { reviewed: newState },
+      );
+      if (d.reviewed) state.reviewedSet.add(f);
+      else state.reviewedSet.delete(f);
       renderNav();
     } catch (e) {
-      setSaveStatus('Reviewed failed: ' + e.message, 'warn');
+      setSaveStatus("Reviewed failed: " + e.message, "warn");
     }
   }
 
   async function saveAnnotations(silent) {
-    if (state.loadStatus === 'future') return;
-    const images = state.allImages.map(img => {
-      const a = state.annMap[img.file] || { status: 'unlabeled', segments: [], boxes: [] };
+    if (state.loadStatus === "future") return;
+    const images = state.allImages.map((img) => {
+      const a = state.annMap[img.file] || {
+        status: "unlabeled",
+        segments: [],
+        boxes: [],
+      };
       return {
         file: img.file,
         width: IMG_W,
         height: IMG_H,
-        status: a.status || 'unlabeled',
+        status: a.status || "unlabeled",
         annotations: { segments: a.segments || [], boxes: a.boxes || [] },
       };
     });
-    const payload = { model: MODEL, schemaVersion: 2, classes: state.classes, images };
+    const payload = {
+      model: MODEL,
+      schemaVersion: 2,
+      classes: state.classes,
+      images,
+    };
     el.saveBtn.disabled = true;
-    if (!silent) setSaveStatus('Saving…');
+    if (!silent) setSaveStatus("Saving…");
     try {
-      await api('POST', 'annotate.php?action=save_annotations&model=' + encodeURIComponent(MODEL), payload);
+      await api(
+        "POST",
+        "annotate.php?action=save_annotations&model=" +
+          encodeURIComponent(MODEL),
+        payload,
+      );
       clearDirty();
       if (!silent) {
-        setSaveStatus('Saved.', 'ok');
-        setTimeout(() => { if (el.saveStatus.textContent === 'Saved.') setSaveStatus(''); }, 2000);
+        setSaveStatus("Saved.", "ok");
+        setTimeout(() => {
+          if (el.saveStatus.textContent === "Saved.") setSaveStatus("");
+        }, 2000);
       }
     } catch (e) {
-      setSaveStatus('Save failed: ' + e.message, 'warn');
+      setSaveStatus("Save failed: " + e.message, "warn");
     } finally {
       el.saveBtn.disabled = state.currentIndex < 0;
     }
@@ -221,22 +286,23 @@
   // ── Export ───────────────────────────────────────────────────────────────
   function isAllDone() {
     if (!state.allImages.length) return false;
-    return state.allImages.every(img => {
+    return state.allImages.every((img) => {
       const ann = state.annMap[img.file];
-      return (ann && ann.status === 'done') || img.status === 'done';
+      return (ann && ann.status === "done") || img.status === "done";
     });
   }
 
   function updateExportBtn() {
     const total = state.allImages.length;
-    const doneCount = state.allImages.filter(img => {
+    const doneCount = state.allImages.filter((img) => {
       const ann = state.annMap[img.file];
-      return (ann && ann.status === 'done') || img.status === 'done';
+      return (ann && ann.status === "done") || img.status === "done";
     }).length;
     el.exportBtn.disabled = doneCount === 0;
-    el.exportStatus.textContent = doneCount === total && total > 0
-      ? 'All ' + total + ' images annotated.'
-      : doneCount + ' / ' + total + ' images done.';
+    el.exportStatus.textContent =
+      doneCount === total && total > 0
+        ? "All " + total + " images annotated."
+        : doneCount + " / " + total + " images done.";
   }
 
   // ── Smart Select (online segmentation server) ──────────────────────────────
@@ -246,7 +312,7 @@
 
   function setSmartStatus(msg, tone) {
     el.smartStatus.textContent = msg;
-    el.smartStatus.className = 'smart-status' + (tone ? ' ' + tone : '');
+    el.smartStatus.className = "smart-status" + (tone ? " " + tone : "");
   }
 
   // Anchor the popup just under the Smart toolbar button, clamped to the viewport.
@@ -254,18 +320,25 @@
     const r = el.modeSmart.getBoundingClientRect();
     const panelW = 260;
     const left = Math.max(8, Math.min(r.left, window.innerWidth - panelW - 8));
-    el.smartPanel.style.top = (r.bottom + 6) + 'px';
-    el.smartPanel.style.left = left + 'px';
+    el.smartPanel.style.top = r.bottom + 6 + "px";
+    el.smartPanel.style.left = left + "px";
   }
 
   function isPointPair(value) {
-    return Array.isArray(value) && value.length >= 2
-      && Number.isFinite(Number(value[0])) && Number.isFinite(Number(value[1]));
+    return (
+      Array.isArray(value) &&
+      value.length >= 2 &&
+      Number.isFinite(Number(value[0])) &&
+      Number.isFinite(Number(value[1]))
+    );
   }
   function collectMaskPolygons(value, polygons = []) {
     if (!Array.isArray(value) || !value.length) return polygons;
-    if (value.every(item => isPointPair(item))) { polygons.push(value); return polygons; }
-    value.forEach(item => collectMaskPolygons(item, polygons));
+    if (value.every((item) => isPointPair(item))) {
+      polygons.push(value);
+      return polygons;
+    }
+    value.forEach((item) => collectMaskPolygons(item, polygons));
     return polygons;
   }
 
@@ -277,17 +350,22 @@
 
   // ── Client-side polygon simplification (Douglas-Peucker) ──────────────────
   function perpDist(p, a, b) {
-    const dx = b.x - a.x, dy = b.y - a.y;
+    const dx = b.x - a.x,
+      dy = b.y - a.y;
     const len = Math.hypot(dx, dy) || 1;
     return Math.abs((p.x - a.x) * dy - (p.y - a.y) * dx) / len;
   }
   function rdp(points, epsilon) {
     if (points.length < 3) return points.slice();
-    let dmax = 0, index = 0;
+    let dmax = 0,
+      index = 0;
     const end = points.length - 1;
     for (let i = 1; i < end; i++) {
       const d = perpDist(points[i], points[0], points[end]);
-      if (d > dmax) { index = i; dmax = d; }
+      if (d > dmax) {
+        index = i;
+        dmax = d;
+      }
     }
     if (dmax > epsilon) {
       const left = rdp(points.slice(0, index + 1), epsilon);
@@ -298,7 +376,11 @@
   }
   function polyPerimeter(points) {
     let per = 0;
-    for (let i = 1; i < points.length; i++) per += Math.hypot(points[i].x - points[i - 1].x, points[i].y - points[i - 1].y);
+    for (let i = 1; i < points.length; i++)
+      per += Math.hypot(
+        points[i].x - points[i - 1].x,
+        points[i].y - points[i - 1].y,
+      );
     return per || 1;
   }
 
@@ -306,8 +388,10 @@
   function applySimplify() {
     const eps = SIMPLIFY_EPS[parseInt(el.smartSimplify.value, 10)] ?? 0.004;
     state.smart.preview = state.smart.raw
-      .map(poly => ({ points: rdp(poly.points, eps * polyPerimeter(poly.points)) }))
-      .filter(p => p.points.length >= 3);
+      .map((poly) => ({
+        points: rdp(poly.points, eps * polyPerimeter(poly.points)),
+      }))
+      .filter((p) => p.points.length >= 3);
     redraw();
   }
 
@@ -316,15 +400,23 @@
   function currentFrameBlob() {
     return new Promise((resolve, reject) => {
       const f = currentFile();
-      if (!f) { reject(new Error('no image')); return; }
+      if (!f) {
+        reject(new Error("no image"));
+        return;
+      }
       const img = new window.Image();
       img.onload = () => {
-        const c = document.createElement('canvas');
-        c.width = IMG_W; c.height = IMG_H;
-        c.getContext('2d').drawImage(img, 0, 0, IMG_W, IMG_H);
-        c.toBlob(b => b ? resolve(b) : reject(new Error('encode failed')), 'image/jpeg', 0.70);
+        const c = document.createElement("canvas");
+        c.width = IMG_W;
+        c.height = IMG_H;
+        c.getContext("2d").drawImage(img, 0, 0, IMG_W, IMG_H);
+        c.toBlob(
+          (b) => (b ? resolve(b) : reject(new Error("encode failed"))),
+          "image/jpeg",
+          0.7,
+        );
       };
-      img.onerror = () => reject(new Error('image load failed'));
+      img.onerror = () => reject(new Error("image load failed"));
       img.src = IMG_BASE + encodeURIComponent(f);
     });
   }
@@ -332,138 +424,217 @@
   async function smartDetect() {
     if (state.smart.busy) return;
     const f = currentFile();
-    if (!f) { setSmartStatus('Select an image first.', 'warn'); return; }
-    if (!WS_CFG.url) { setSmartStatus('Segmentation server not configured.', 'warn'); return; }
+    if (!f) {
+      setSmartStatus("Select an image first.", "warn");
+      return;
+    }
+    if (!WS_CFG.url) {
+      setSmartStatus("Segmentation server not configured.", "warn");
+      return;
+    }
 
     state.smart.busy = true;
     state.smart.preview = [];
     redraw();
-    setSmartStatus('Detecting…', 'busy');
-    el.canvasOverlay.classList.remove('error');
-    el.canvasOverlay.textContent = 'Detecting…';
-    el.canvasOverlay.style.display = 'flex';
+    setSmartStatus("Detecting…", "busy");
+    el.canvasOverlay.classList.remove("error");
+    el.canvasOverlay.textContent = "Detecting…";
+    el.canvasOverlay.style.display = "flex";
 
     let blob;
     try {
       blob = await currentFrameBlob();
     } catch (e) {
-      finishDetect(true, 'Could not read image: ' + e.message);
+      finishDetect(true, "Could not read image: " + e.message);
       return;
     }
     const buf = await blob.arrayBuffer();
     const model = state.smart.model || el.smartModel.value;
     const frameId = String(Date.now());
-    const sessionId = 'annotator-' + Math.random().toString(36).slice(2);
+    const sessionId = "annotator-" + Math.random().toString(36).slice(2);
 
-    let ws, settled = false;
+    let ws,
+      settled = false;
     const done = (warnMsg, polygons) => {
       if (settled) return;
       settled = true;
       clearTimeout(timer);
-      try { ws && ws.close(); } catch (_) {}
+      try {
+        ws && ws.close();
+      } catch (_) {}
       finishDetect(!!warnMsg, warnMsg, polygons);
     };
-    const timer = setTimeout(() => done('No response from server (timed out).'), 10000);
+    const timer = setTimeout(
+      () => done("No response from server (timed out)."),
+      10000,
+    );
 
     try {
       ws = new WebSocket(WS_CFG.url);
-      ws.binaryType = 'arraybuffer';
+      ws.binaryType = "arraybuffer";
       ws.onopen = () => {
-        ws.send(JSON.stringify({ type: 'auth', token: WS_CFG.token, 'X-Room': WS_CFG.room }));
+        ws.send(
+          JSON.stringify({
+            type: "auth",
+            token: WS_CFG.token,
+            "X-Room": WS_CFG.room,
+          }),
+        );
       };
-      ws.onerror = () => done('Segmentation websocket error.');
-      ws.onclose = () => { if (!settled) done('Connection closed before a result.'); };
+      ws.onerror = () => done("Segmentation websocket error.");
+      ws.onclose = () => {
+        if (!settled) done("Connection closed before a result.");
+      };
       ws.onmessage = (msg) => {
-        if (typeof msg.data !== 'string') return;
-        let p; try { p = JSON.parse(msg.data); } catch (_) { return; }
-
-        if (p.type === 'auth_required') {
-          ws.send(JSON.stringify({ type: 'auth', token: WS_CFG.token, 'X-Room': WS_CFG.room }));
+        if (typeof msg.data !== "string") return;
+        let p;
+        try {
+          p = JSON.parse(msg.data);
+        } catch (_) {
           return;
         }
-        if (p.type === 'auth_ok' || p.type === 'authenticated' || p.type === 'room_joined'
-            || p.auth === 'ok' || p.authenticated === true) {
-          ws.send(JSON.stringify({
-            type: 'frame_meta', frame_id: frameId, sessionId,
-            model, confidence: 0.5, returnMasks: true, sendMQTT: false,
-          }));
+
+        if (p.type === "auth_required") {
+          ws.send(
+            JSON.stringify({
+              type: "auth",
+              token: WS_CFG.token,
+              "X-Room": WS_CFG.room,
+            }),
+          );
+          return;
+        }
+        if (
+          p.type === "auth_ok" ||
+          p.type === "authenticated" ||
+          p.type === "room_joined" ||
+          p.auth === "ok" ||
+          p.authenticated === true
+        ) {
+          ws.send(
+            JSON.stringify({
+              type: "frame_meta",
+              frame_id: frameId,
+              sessionId,
+              model,
+              confidence: 0.5,
+              returnMasks: true,
+              sendMQTT: false,
+            }),
+          );
           ws.send(buf);
           return;
         }
-        if (p.type === 'auth_error' || p.type === 'unauthorized' || p.authenticated === false) {
-          done('Authentication failed.');
+        if (
+          p.type === "auth_error" ||
+          p.type === "unauthorized" ||
+          p.authenticated === false
+        ) {
+          done("Authentication failed.");
           return;
         }
-        if (String(p.frame_id) === frameId || p.resultMasks !== undefined || p.returnMasks !== undefined) {
-          const masks = p.resultMasks !== undefined ? p.resultMasks : p.returnMasks;
+        if (
+          String(p.frame_id) === frameId ||
+          p.resultMasks !== undefined ||
+          p.returnMasks !== undefined
+        ) {
+          const masks =
+            p.resultMasks !== undefined ? p.resultMasks : p.returnMasks;
           const polys = collectMaskPolygons(masks || []);
           done(null, polys);
         }
       };
     } catch (e) {
-      done('Could not connect: ' + e.message);
+      done("Could not connect: " + e.message);
     }
   }
 
   function finishDetect(isWarn, msg, polygons) {
     state.smart.busy = false;
-    el.canvasOverlay.style.display = 'none';
-    if (isWarn) { setSmartStatus(msg, 'warn'); return; }
+    el.canvasOverlay.style.display = "none";
+    if (isWarn) {
+      setSmartStatus(msg, "warn");
+      return;
+    }
     // Keep the full-detail polygons; the Simplify slider derives the preview.
-    state.smart.raw = (polygons || []).filter(poly => poly.length >= 3)
-      .map(poly => ({ points: poly.map(pt => ({ x: Number(pt[0]), y: Number(pt[1]) })) }));
+    state.smart.raw = (polygons || [])
+      .filter((poly) => poly.length >= 3)
+      .map((poly) => ({
+        points: poly.map((pt) => ({ x: Number(pt[0]), y: Number(pt[1]) })),
+      }));
     applySimplify();
     setSmartStatus(
       state.smart.raw.length
-        ? state.smart.raw.length + ' polygon(s) found. Adjust Simplify, then Add.'
-        : 'No path detected here.',
-      state.smart.raw.length ? 'ready' : 'warn');
+        ? state.smart.raw.length +
+            " polygon(s) found. Adjust Simplify, then Add."
+        : "No path detected here.",
+      state.smart.raw.length ? "ready" : "warn",
+    );
   }
 
   function smartFinish() {
-    const polys = state.smart.preview.filter(p => p.points.length >= 3);
-    if (!polys.length) { setSmartStatus('Nothing to add.', 'warn'); return; }
+    const polys = state.smart.preview.filter((p) => p.points.length >= 3);
+    if (!polys.length) {
+      setSmartStatus("Nothing to add.", "warn");
+      return;
+    }
     // The server returns trail/path masks — map to the project's path class.
     let classId = state.selectedClass;
-    const pathClass = state.classes.find(c => c.name === 'path-oxod')
-      || state.classes.find(c => c.name === 'path');
+    const pathClass =
+      state.classes.find((c) => c.name === "path-oxod") ||
+      state.classes.find((c) => c.name === "path");
     if (pathClass) classId = pathClass.id;
 
     const ann = currentAnn();
-    polys.forEach(pv => {
+    polys.forEach((pv) => {
       ann.segments.push({
-        id: shortId('s'),
+        id: shortId("s"),
         classId,
-        source: 'smart',
-        points: pv.points.map(p => ({ x: Math.round(p.x), y: Math.round(p.y) })),
+        source: "smart",
+        points: pv.points.map((p) => ({
+          x: Math.round(p.x),
+          y: Math.round(p.y),
+        })),
       });
     });
-    if (ann.status === 'unlabeled') ann.status = 'in-progress';
+    if (ann.status === "unlabeled") ann.status = "in-progress";
     state.allImages[state.currentIndex].status = ann.status;
     markDirty();
     smartClear();
-    renderSidebar(); renderNav(); redraw();
+    renderSidebar();
+    renderNav();
+    redraw();
     saveAnnotations(true);
-    setSmartStatus('Added ' + polys.length + ' polygon(s).', 'ready');
+    setSmartStatus("Added " + polys.length + " polygon(s).", "ready");
   }
 
   // ── Render: right-panel image list ───────────────────────────────────────
   function renderRightImageList() {
     el.imgCount.textContent = state.allImages.length;
-    el.rightImgList.innerHTML = '';
+    el.rightImgList.innerHTML = "";
     state.allImages.forEach((img, i) => {
-      const status = (state.annMap[img.file] && state.annMap[img.file].status) || img.status || 'unlabeled';
-      const row = document.createElement('div');
-      row.className = 'right-img-item' + (i === state.currentIndex ? ' active' : '');
+      const status =
+        (state.annMap[img.file] && state.annMap[img.file].status) ||
+        img.status ||
+        "unlabeled";
+      const row = document.createElement("div");
+      row.className =
+        "right-img-item" + (i === state.currentIndex ? " active" : "");
       row.innerHTML =
-        '<span class="ri-dot ' + status + '"></span>' +
-        '<span class="ri-name" title="' + escapeHTML(img.file) + '">' + escapeHTML(img.file) + '</span>';
-      row.addEventListener('click', () => selectImage(i));
+        '<span class="ri-dot ' +
+        status +
+        '"></span>' +
+        '<span class="ri-name" title="' +
+        escapeHTML(img.file) +
+        '">' +
+        escapeHTML(img.file) +
+        "</span>";
+      row.addEventListener("click", () => selectImage(i));
       el.rightImgList.appendChild(row);
     });
     // Scroll active item into view.
-    const active = el.rightImgList.querySelector('.active');
-    if (active) active.scrollIntoView({ block: 'nearest' });
+    const active = el.rightImgList.querySelector(".active");
+    if (active) active.scrollIntoView({ block: "nearest" });
   }
 
   // ── Render: top nav (counter, crumb, status chip, reviewed btn) ───────────
@@ -471,49 +642,56 @@
     const total = state.allImages.length;
     const cur = state.currentIndex;
     el.counterTot.textContent = total;
-    el.counterCur.textContent = cur >= 0 ? (cur + 1) : 0;
+    el.counterCur.textContent = cur >= 0 ? cur + 1 : 0;
     el.prevBtn.disabled = cur <= 0;
     el.nextBtn.disabled = cur < 0 || cur >= total - 1;
-    el.saveBtn.disabled = cur < 0 || state.loadStatus === 'future';
-    el.markDoneBtn.disabled = cur < 0;
-    el.reviewedBtn.disabled = cur < 0;
+    el.saveBtn.disabled = cur < 0 || state.loadStatus === "future";
+    el.saveContinueBtn.disabled = cur < 0 || cur >= total - 1;
 
     const f = currentFile();
-    el.crumbFile.textContent = f || '—';
+    el.crumbFile.textContent = f || "—";
     if (f) {
       const ann = state.annMap[f];
-      const status = (ann && ann.status) || 'unlabeled';
-      el.statusChip.textContent = status === 'unlabeled' ? '' : status.replace('-', ' ');
-      el.statusChip.className = 'status-chip ' + status;
+      const status = (ann && ann.status) || "unlabeled";
+      el.statusChip.textContent =
+        status === "unlabeled" ? "" : status.replace("-", " ");
+      el.statusChip.className = "status-chip " + status;
     } else {
-      el.statusChip.textContent = '';
-      el.statusChip.className = 'status-chip';
+      el.statusChip.textContent = "";
+      el.statusChip.className = "status-chip";
     }
-    el.reviewedBtn.classList.toggle('active', f && state.reviewedSet.has(f));
     renderRightImageList();
     updateExportBtn();
   }
 
   // ── Render: class picker ───────────────────────────────────────────────────
   function renderClassList() {
-    el.classList.innerHTML = '';
+    el.classList.innerHTML = "";
     if (state.classes.length === 0) {
-      el.classList.innerHTML = '<div class="no-images" style="padding:8px">No classes. Click + Add class.</div>';
+      el.classList.innerHTML =
+        '<div class="no-images" style="padding:8px">No classes. Click + Add class.</div>';
       return;
     }
     state.classes.forEach((cls, idx) => {
-      const row = document.createElement('div');
-      row.className = 'class-row' + (cls.id === state.selectedClass ? ' selected' : '');
+      const row = document.createElement("div");
+      row.className =
+        "class-row" + (cls.id === state.selectedClass ? " selected" : "");
       row.innerHTML =
-        '<span class="class-dot" style="background:' + (cls.color || PALETTE[idx % PALETTE.length]) + '"></span>' +
-        '<span class="class-name">' + (idx + 1) + '. ' + escapeHTML(cls.name) + '</span>' +
+        '<span class="class-dot" style="background:' +
+        (cls.color || PALETTE[idx % PALETTE.length]) +
+        '"></span>' +
+        '<span class="class-name">' +
+        (idx + 1) +
+        ". " +
+        escapeHTML(cls.name) +
+        "</span>" +
         '<button class="class-edit" title="Edit class">⚙</button>';
-      row.addEventListener('click', e => {
-        if (e.target.classList.contains('class-edit')) return;
+      row.addEventListener("click", (e) => {
+        if (e.target.classList.contains("class-edit")) return;
         state.selectedClass = cls.id;
         renderClassList();
       });
-      row.querySelector('.class-edit').addEventListener('click', e => {
+      row.querySelector(".class-edit").addEventListener("click", (e) => {
         e.stopPropagation();
         openClassModal(cls);
       });
@@ -528,125 +706,177 @@
   }
 
   function renderSidebar() {
-    el.groupName.textContent = MODEL || 'default';
+    el.groupName.textContent = MODEL || "default";
     const ann = currentAnn();
-    const segs = ann ? (ann.segments || []) : [];
-    const boxes = ann ? (ann.boxes || []) : [];
+    const segs = ann ? ann.segments || [] : [];
+    const boxes = ann ? ann.boxes || [] : [];
     el.segCount.textContent = segs.length + boxes.length;
-    if (state.tab === 'layers') renderLayersTab(segs, boxes);
+    if (state.tab === "layers") renderLayersTab(segs, boxes);
     else renderClassesTab(segs, boxes);
     renderUnusedClasses(segs, boxes);
   }
 
   function renderClassesTab(segs, boxes) {
-    el.tabBody.innerHTML = '';
+    el.tabBody.innerHTML = "";
     const counts = {};
-    segs.forEach(s => { counts[s.classId] = (counts[s.classId] || 0) + 1; });
-    boxes.forEach(b => { counts[b.classId] = (counts[b.classId] || 0) + 1; });
+    segs.forEach((s) => {
+      counts[s.classId] = (counts[s.classId] || 0) + 1;
+    });
+    boxes.forEach((b) => {
+      counts[b.classId] = (counts[b.classId] || 0) + 1;
+    });
     const usedIds = Object.keys(counts).map(Number);
     if (!usedIds.length) {
-      el.tabBody.innerHTML = '<div class="no-images" style="padding:14px">No regions on this image.</div>';
+      el.tabBody.innerHTML =
+        '<div class="no-images" style="padding:14px">No regions on this image.</div>';
       return;
     }
-    usedIds.forEach(id => {
-      const cls = state.classes.find(c => c.id === id);
-      const name = cls ? cls.name : ('class ' + id);
-      const row = document.createElement('div');
-      row.className = 'cls-row' + (state.classFilter === id ? ' active' : '');
+    usedIds.forEach((id) => {
+      const cls = state.classes.find((c) => c.id === id);
+      const name = cls ? cls.name : "class " + id;
+      const row = document.createElement("div");
+      row.className = "cls-row" + (state.classFilter === id ? " active" : "");
       row.innerHTML =
-        '<span class="class-dot" style="background:' + classColor(id) + '"></span>' +
-        '<span class="cls-name">' + escapeHTML(name) + '</span>' +
-        '<span class="cls-count">' + counts[id] + '</span>';
-      row.addEventListener('click', () => {
+        '<span class="class-dot" style="background:' +
+        classColor(id) +
+        '"></span>' +
+        '<span class="cls-name">' +
+        escapeHTML(name) +
+        "</span>" +
+        '<span class="cls-count">' +
+        counts[id] +
+        "</span>";
+      row.addEventListener("click", () => {
         state.classFilter = state.classFilter === id ? null : id;
-        renderSidebar(); redraw();
+        renderSidebar();
+        redraw();
       });
       el.tabBody.appendChild(row);
     });
   }
 
   function renderLayersTab(segs, boxes) {
-    el.tabBody.innerHTML = '';
+    el.tabBody.innerHTML = "";
     const perClass = {};
     function label(classId, prefix) {
       perClass[classId] = (perClass[classId] || 0) + 1;
-      return prefix + className(classId) + ' #' + perClass[classId];
+      return prefix + className(classId) + " #" + perClass[classId];
     }
     const items = [];
-    segs.forEach((s, idx) => { ensureRegionId(s, 's'); items.push({ kind: 'segment', idx, region: s, label: label(s.classId, '△ ') }); });
-    boxes.forEach((b, idx) => { ensureRegionId(b, 'b'); items.push({ kind: 'box', idx, region: b, label: label(b.classId, '▭ ') }); });
+    segs.forEach((s, idx) => {
+      ensureRegionId(s, "s");
+      items.push({
+        kind: "segment",
+        idx,
+        region: s,
+        label: label(s.classId, "△ "),
+      });
+    });
+    boxes.forEach((b, idx) => {
+      ensureRegionId(b, "b");
+      items.push({
+        kind: "box",
+        idx,
+        region: b,
+        label: label(b.classId, "▭ "),
+      });
+    });
     if (!items.length) {
-      el.tabBody.innerHTML = '<div class="no-images" style="padding:14px">No regions on this image.</div>';
+      el.tabBody.innerHTML =
+        '<div class="no-images" style="padding:14px">No regions on this image.</div>';
       return;
     }
-    items.forEach(it => {
+    items.forEach((it) => {
       const id = it.region.id;
       const visible = state.layerVisibility[id] !== false;
-      const isSel = state.selection && state.selection.type === it.kind && state.selection.idx === it.idx;
-      const row = document.createElement('div');
-      row.className = 'layer-row' + (isSel ? ' selected' : '');
+      const isSel =
+        state.selection &&
+        state.selection.type === it.kind &&
+        state.selection.idx === it.idx;
+      const row = document.createElement("div");
+      row.className = "layer-row" + (isSel ? " selected" : "");
       row.innerHTML =
-        '<span class="class-dot" style="background:' + classColor(it.region.classId) + '"></span>' +
-        '<span class="layer-name">' + escapeHTML(it.label) + '</span>' +
-        '<button class="layer-eye' + (visible ? '' : ' off') + '" title="Toggle visibility">' + (visible ? '👁' : '⊘') + '</button>' +
+        '<span class="class-dot" style="background:' +
+        classColor(it.region.classId) +
+        '"></span>' +
+        '<span class="layer-name">' +
+        escapeHTML(it.label) +
+        "</span>" +
+        '<button class="layer-eye' +
+        (visible ? "" : " off") +
+        '" title="Toggle visibility">' +
+        (visible ? "👁" : "⊘") +
+        "</button>" +
         '<button class="layer-del" title="Delete">×</button>';
-      row.addEventListener('click', e => {
-        if (e.target.closest('.layer-eye') || e.target.closest('.layer-del')) return;
+      row.addEventListener("click", (e) => {
+        if (e.target.closest(".layer-eye") || e.target.closest(".layer-del"))
+          return;
         state.selection = { type: it.kind, idx: it.idx };
-        if (state.mode !== 'select') setMode('select');
-        renderSidebar(); redraw();
+        if (state.mode !== "select") setMode("select");
+        renderSidebar();
+        redraw();
       });
-      row.querySelector('.layer-eye').addEventListener('click', e => {
+      row.querySelector(".layer-eye").addEventListener("click", (e) => {
         e.stopPropagation();
         state.layerVisibility[id] = !visible;
-        renderSidebar(); redraw();
+        renderSidebar();
+        redraw();
       });
-      row.querySelector('.layer-del').addEventListener('click', e => {
+      row.querySelector(".layer-del").addEventListener("click", (e) => {
         e.stopPropagation();
         const a = currentAnn();
-        if (it.kind === 'segment') a.segments.splice(it.idx, 1);
-        if (it.kind === 'box') a.boxes.splice(it.idx, 1);
+        if (it.kind === "segment") a.segments.splice(it.idx, 1);
+        if (it.kind === "box") a.boxes.splice(it.idx, 1);
         state.selection = null;
         markDirty();
-        renderSidebar(); redraw();
+        renderSidebar();
+        redraw();
       });
       el.tabBody.appendChild(row);
     });
   }
 
   function renderUnusedClasses(segs, boxes) {
-    el.unusedList.innerHTML = '';
+    el.unusedList.innerHTML = "";
     const usedIds = new Set();
-    segs.forEach(s => usedIds.add(s.classId));
-    boxes.forEach(b => usedIds.add(b.classId));
-    const unused = state.classes.filter(c => !usedIds.has(c.id));
+    segs.forEach((s) => usedIds.add(s.classId));
+    boxes.forEach((b) => usedIds.add(b.classId));
+    const unused = state.classes.filter((c) => !usedIds.has(c.id));
     if (!unused.length) {
-      el.unusedList.innerHTML = '<div class="tags-empty">All classes have regions.</div>';
+      el.unusedList.innerHTML =
+        '<div class="tags-empty">All classes have regions.</div>';
       return;
     }
-    unused.forEach(cls => {
-      const row = document.createElement('div');
-      row.className = 'unused-row';
+    unused.forEach((cls) => {
+      const row = document.createElement("div");
+      row.className = "unused-row";
       row.innerHTML =
-        '<span class="class-dot" style="background:' + (cls.color || classColor(cls.id)) + '"></span>' +
-        '<span>' + escapeHTML(cls.name) + '</span>';
+        '<span class="class-dot" style="background:' +
+        (cls.color || classColor(cls.id)) +
+        '"></span>' +
+        "<span>" +
+        escapeHTML(cls.name) +
+        "</span>";
       el.unusedList.appendChild(row);
     });
   }
 
   function renderTags() {
-    el.tagsList.innerHTML = '';
+    el.tagsList.innerHTML = "";
     state.tags.forEach((tag, i) => {
-      const chip = document.createElement('span');
-      chip.className = 'tag-chip';
+      const chip = document.createElement("span");
+      chip.className = "tag-chip";
       chip.innerHTML = escapeHTML(tag) + ' <span class="tag-x">×</span>';
-      chip.querySelector('.tag-x').addEventListener('click', () => {
+      chip.querySelector(".tag-x").addEventListener("click", () => {
         state.tags.splice(i, 1);
         renderTags();
       });
       el.tagsList.appendChild(chip);
     });
-    el.tagsList.parentElement.querySelector('.tags-empty').style.display = state.tags.length ? 'none' : '';
+    el.tagsList.parentElement.querySelector(".tags-empty").style.display = state
+      .tags.length
+      ? "none"
+      : "";
   }
 
   // ── Class manager modal ────────────────────────────────────────────────────
@@ -658,9 +888,9 @@
   }
   function countAnnotationsForClass(classId) {
     let n = 0;
-    Object.values(state.annMap).forEach(a => {
-      n += (a.segments || []).filter(s => s.classId === classId).length;
-      n += (a.boxes || []).filter(b => b.classId === classId).length;
+    Object.values(state.annMap).forEach((a) => {
+      n += (a.segments || []).filter((s) => s.classId === classId).length;
+      n += (a.boxes || []).filter((b) => b.classId === classId).length;
     });
     return n;
   }
@@ -669,100 +899,146 @@
     const isNew = !existing;
     const editing = existing
       ? { ...existing }
-      : { id: nextClassId(), name: '', color: nextClassColor() };
+      : { id: nextClassId(), name: "", color: nextClassColor() };
     const usage = isNew ? 0 : countAnnotationsForClass(existing.id);
-    const reassignTarget = isNew ? null : state.classes.find(c => c.id !== existing.id);
+    const reassignTarget = isNew
+      ? null
+      : state.classes.find((c) => c.id !== existing.id);
 
-    const backdrop = document.createElement('div');
-    backdrop.className = 'modal-backdrop';
+    const backdrop = document.createElement("div");
+    backdrop.className = "modal-backdrop";
     backdrop.innerHTML =
       '<div class="modal" role="dialog" aria-label="Annotation Editor">' +
-      '<h2>' + (isNew ? 'Add class' : 'Edit class') + '</h2>' +
-      '<label>Name</label>' +
-      '<input type="text" id="m_name" value="' + escapeHTML(editing.name) + '" />' +
-      '<label>Color</label>' +
+      "<h2>" +
+      (isNew ? "Add class" : "Edit class") +
+      "</h2>" +
+      "<label>Name</label>" +
+      '<input type="text" id="m_name" value="' +
+      escapeHTML(editing.name) +
+      '" />' +
+      "<label>Color</label>" +
       '<div class="palette" id="m_palette"></div>' +
-      '<input type="text" id="m_color" value="' + editing.color + '" placeholder="#rrggbb" />' +
+      '<input type="text" id="m_color" value="' +
+      editing.color +
+      '" placeholder="#rrggbb" />' +
       '<div class="actions">' +
-      (isNew ? '' : '<button class="btn btn-warn" id="m_delete" type="button">Delete</button>') +
+      (isNew
+        ? ""
+        : '<button class="btn btn-warn" id="m_delete" type="button">Delete</button>') +
       '<div style="flex:1"></div>' +
       '<button class="btn" id="m_cancel" type="button">Cancel</button>' +
       '<button class="btn btn-cyan" id="m_save" type="button">Save (Enter)</button>' +
-      '</div></div>';
+      "</div></div>";
     el.modalRoot.appendChild(backdrop);
 
-    const palette = backdrop.querySelector('#m_palette');
-    PALETTE.forEach(col => {
-      const sw = document.createElement('div');
-      sw.className = 'swatch' + (col.toLowerCase() === editing.color.toLowerCase() ? ' selected' : '');
+    const palette = backdrop.querySelector("#m_palette");
+    PALETTE.forEach((col) => {
+      const sw = document.createElement("div");
+      sw.className =
+        "swatch" +
+        (col.toLowerCase() === editing.color.toLowerCase() ? " selected" : "");
       sw.style.background = col;
-      sw.addEventListener('click', () => {
+      sw.addEventListener("click", () => {
         editing.color = col;
-        backdrop.querySelector('#m_color').value = col;
-        palette.querySelectorAll('.swatch').forEach((s, i) => s.classList.toggle('selected', PALETTE[i].toLowerCase() === col.toLowerCase()));
+        backdrop.querySelector("#m_color").value = col;
+        palette
+          .querySelectorAll(".swatch")
+          .forEach((s, i) =>
+            s.classList.toggle(
+              "selected",
+              PALETTE[i].toLowerCase() === col.toLowerCase(),
+            ),
+          );
       });
       palette.appendChild(sw);
     });
 
-    backdrop.querySelector('#m_color').addEventListener('input', e => { editing.color = e.target.value; });
-    backdrop.querySelector('#m_name').focus();
+    backdrop.querySelector("#m_color").addEventListener("input", (e) => {
+      editing.color = e.target.value;
+    });
+    backdrop.querySelector("#m_name").focus();
 
-    function close() { el.modalRoot.removeChild(backdrop); }
+    function close() {
+      el.modalRoot.removeChild(backdrop);
+    }
 
     function saveClass() {
-      const name = backdrop.querySelector('#m_name').value.trim();
-      if (!name) { backdrop.querySelector('#m_name').focus(); return; }
+      const name = backdrop.querySelector("#m_name").value.trim();
+      if (!name) {
+        backdrop.querySelector("#m_name").focus();
+        return;
+      }
       editing.name = name;
       if (isNew) {
         state.classes.push(editing);
         state.selectedClass = editing.id;
       } else {
-        const i = state.classes.findIndex(c => c.id === existing.id);
+        const i = state.classes.findIndex((c) => c.id === existing.id);
         if (i >= 0) state.classes[i] = editing;
       }
       markDirty();
-      renderClassList(); renderSidebar(); redraw();
+      renderClassList();
+      renderSidebar();
+      redraw();
       close();
     }
 
-    backdrop.querySelector('#m_save').addEventListener('click', saveClass);
-    backdrop.querySelector('#m_cancel').addEventListener('click', close);
-    backdrop.addEventListener('keydown', e => {
-      if (e.key === 'Enter') { e.preventDefault(); saveClass(); }
-      if (e.key === 'Escape') { close(); }
+    backdrop.querySelector("#m_save").addEventListener("click", saveClass);
+    backdrop.querySelector("#m_cancel").addEventListener("click", close);
+    backdrop.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        saveClass();
+      }
+      if (e.key === "Escape") {
+        close();
+      }
     });
 
-    const delBtn = backdrop.querySelector('#m_delete');
+    const delBtn = backdrop.querySelector("#m_delete");
     if (delBtn) {
-      delBtn.addEventListener('click', () => {
+      delBtn.addEventListener("click", () => {
         if (state.classes.length <= 1) {
-          alert('Cannot delete the last remaining class.');
+          alert("Cannot delete the last remaining class.");
           return;
         }
         const target = reassignTarget;
-        const msg = usage > 0
-          ? `Delete class "${existing.name}"? ${usage} annotation(s) will be reassigned to "${target.name}".`
-          : `Delete class "${existing.name}"?`;
+        const msg =
+          usage > 0
+            ? `Delete class "${existing.name}"? ${usage} annotation(s) will be reassigned to "${target.name}".`
+            : `Delete class "${existing.name}"?`;
         if (!confirm(msg)) return;
         if (usage > 0) {
-          Object.values(state.annMap).forEach(a => {
-            (a.segments || []).forEach(s => { if (s.classId === existing.id) s.classId = target.id; });
-            (a.boxes || []).forEach(b => { if (b.classId === existing.id) b.classId = target.id; });
+          Object.values(state.annMap).forEach((a) => {
+            (a.segments || []).forEach((s) => {
+              if (s.classId === existing.id) s.classId = target.id;
+            });
+            (a.boxes || []).forEach((b) => {
+              if (b.classId === existing.id) b.classId = target.id;
+            });
           });
         }
-        state.classes = state.classes.filter(c => c.id !== existing.id);
-        if (state.selectedClass === existing.id) state.selectedClass = state.classes[0].id;
+        state.classes = state.classes.filter((c) => c.id !== existing.id);
+        if (state.selectedClass === existing.id)
+          state.selectedClass = state.classes[0].id;
         markDirty();
-        renderClassList(); renderSidebar(); redraw();
+        renderClassList();
+        renderSidebar();
+        redraw();
         close();
       });
     }
   }
 
   // ── Konva stage ───────────────────────────────────────────────────────────
-  let stage = null, imgLayer = null, annLayer = null, drawLayer = null, cursorLayer = null;
+  let stage = null,
+    imgLayer = null,
+    annLayer = null,
+    drawLayer = null,
+    cursorLayer = null;
   let konvaImage = null;
-  let crosshairV = null, crosshairH = null;
+  let crosshairV = null,
+    crosshairH = null;
 
   function initStage() {
     const rect = el.canvasWrap.getBoundingClientRect();
@@ -775,28 +1051,47 @@
     annLayer = new Konva.Layer();
     drawLayer = new Konva.Layer();
     cursorLayer = new Konva.Layer({ listening: false });
-    stage.add(imgLayer); stage.add(annLayer); stage.add(drawLayer); stage.add(cursorLayer);
+    stage.add(imgLayer);
+    stage.add(annLayer);
+    stage.add(drawLayer);
+    stage.add(cursorLayer);
 
     // Crosshair lines — drawn in stage (unscaled) space so they always span
     // the full canvas regardless of image letterboxing.
-    crosshairV = new Konva.Line({ stroke: '#888', strokeWidth: 1, dash: [8, 4], visible: false });
-    crosshairH = new Konva.Line({ stroke: '#888', strokeWidth: 1, dash: [8, 4], visible: false });
-    cursorLayer.add(crosshairV); cursorLayer.add(crosshairH);
+    crosshairV = new Konva.Line({
+      stroke: "#888",
+      strokeWidth: 1,
+      dash: [8, 4],
+      visible: false,
+    });
+    crosshairH = new Konva.Line({
+      stroke: "#888",
+      strokeWidth: 1,
+      dash: [8, 4],
+      visible: false,
+    });
+    cursorLayer.add(crosshairV);
+    cursorLayer.add(crosshairH);
 
     new ResizeObserver(resizeStage).observe(el.canvasWrap);
   }
 
   function updateCrosshair() {
     const pos = stage.getPointerPosition();
-    if (!pos) { hideCrosshair(); return; }
+    if (!pos) {
+      hideCrosshair();
+      return;
+    }
     crosshairV.points([pos.x, 0, pos.x, stage.height()]);
     crosshairH.points([0, pos.y, stage.width(), pos.y]);
-    crosshairV.visible(true); crosshairH.visible(true);
+    crosshairV.visible(true);
+    crosshairH.visible(true);
     cursorLayer.batchDraw();
   }
   function hideCrosshair() {
     if (!crosshairV) return;
-    crosshairV.visible(false); crosshairH.visible(false);
+    crosshairV.visible(false);
+    crosshairH.visible(false);
     cursorLayer.batchDraw();
   }
 
@@ -815,7 +1110,7 @@
     const scale = Math.min(sx, sy);
     const dx = (stage.width() - IMG_W * scale) / 2;
     const dy = (stage.height() - IMG_H * scale) / 2;
-    [imgLayer, annLayer, drawLayer].forEach(layer => {
+    [imgLayer, annLayer, drawLayer].forEach((layer) => {
       layer.scale({ x: scale, y: scale });
       layer.position({ x: dx, y: dy });
     });
@@ -827,17 +1122,23 @@
     const img = new window.Image();
     img.onload = () => {
       imgLayer.destroyChildren();
-      konvaImage = new Konva.Image({ image: img, x: 0, y: 0, width: IMG_W, height: IMG_H });
+      konvaImage = new Konva.Image({
+        image: img,
+        x: 0,
+        y: 0,
+        width: IMG_W,
+        height: IMG_H,
+      });
       imgLayer.add(konvaImage);
       applyTransform();
-      el.canvasIdle.style.display = 'none';
-      el.stageDiv.style.display = 'block';
+      el.canvasIdle.style.display = "none";
+      el.stageDiv.style.display = "block";
       redraw();
     };
     img.onerror = () => {
-      setDrawStatus('Failed to load image.');
-      el.canvasIdle.textContent = 'Failed to load image.';
-      el.canvasIdle.style.display = '';
+      setDrawStatus("Failed to load image.");
+      el.canvasIdle.textContent = "Failed to load image.";
+      el.canvasIdle.style.display = "";
     };
     img.src = IMG_BASE + encodeURIComponent(file);
   }
@@ -853,38 +1154,51 @@
 
   // ── Drawing: polygon ───────────────────────────────────────────────────────
   function startPolygonAt(p) {
-    state.drawing = { type: 'polygon', classId: state.selectedClass, points: [p] };
-    setDrawStatus('Adding vertices… double-click to close · Backspace to undo · Esc to cancel');
+    state.drawing = {
+      type: "polygon",
+      classId: state.selectedClass,
+      points: [p],
+    };
+    setDrawStatus(
+      "Adding vertices… double-click to close · Backspace to undo · Esc to cancel",
+    );
     redraw();
   }
 
   function addPolygonVertex(p) {
-    if (!state.drawing || state.drawing.type !== 'polygon') return;
+    if (!state.drawing || state.drawing.type !== "polygon") return;
     state.drawing.points.push(p);
     redraw();
   }
 
   function commitPolygon() {
     const d = state.drawing;
-    if (!d || d.type !== 'polygon' || d.points.length < 3) {
-      state.drawing = null; redraw(); return;
+    if (!d || d.type !== "polygon" || d.points.length < 3) {
+      state.drawing = null;
+      redraw();
+      return;
     }
     const ann = currentAnn();
     ann.segments.push({
-      id: shortId('s'),
+      id: shortId("s"),
       classId: d.classId,
-      points: d.points.map(p => ({ x: Math.round(p.x), y: Math.round(p.y) })),
+      points: d.points.map((p) => ({ x: Math.round(p.x), y: Math.round(p.y) })),
     });
-    if (ann.status === 'unlabeled') ann.status = 'in-progress';
+    if (ann.status === "unlabeled") ann.status = "in-progress";
     state.allImages[state.currentIndex].status = ann.status;
     state.drawing = null;
     markDirty();
-    renderSidebar(); renderNav(); redraw();
-    setDrawStatus('Polygon saved. Click to start a new one.');
+    renderSidebar();
+    renderNav();
+    redraw();
+    setDrawStatus("Polygon saved. Click to start a new one.");
   }
 
   function cancelDrawing() {
-    state.drawing = null; boxDragStart = null; redraw(); setDrawStatus('Cancelled.');
+    state.drawing = null;
+    boxDragStart = null;
+    redraw();
+    setDrawStatus("Cancelled.");
   }
 
   // ── Drawing: box ───────────────────────────────────────────────────────────
@@ -892,41 +1206,56 @@
 
   function startBoxAt(p) {
     boxDragStart = p;
-    state.drawing = { type: 'box', classId: state.selectedClass, x: p.x, y: p.y, w: 0, h: 0 };
-    setDrawStatus('Drag to size · release to commit · Esc to cancel');
+    state.drawing = {
+      type: "box",
+      classId: state.selectedClass,
+      x: p.x,
+      y: p.y,
+      w: 0,
+      h: 0,
+    };
+    setDrawStatus("Drag to size · release to commit · Esc to cancel");
     redraw();
   }
 
   function updateBoxDrag(p) {
-    if (!boxDragStart || !state.drawing || state.drawing.type !== 'box') return;
+    if (!boxDragStart || !state.drawing || state.drawing.type !== "box") return;
     const x1 = Math.min(boxDragStart.x, p.x);
     const y1 = Math.min(boxDragStart.y, p.y);
     const x2 = Math.max(boxDragStart.x, p.x);
     const y2 = Math.max(boxDragStart.y, p.y);
-    state.drawing.x = x1; state.drawing.y = y1;
-    state.drawing.w = x2 - x1; state.drawing.h = y2 - y1;
+    state.drawing.x = x1;
+    state.drawing.y = y1;
+    state.drawing.w = x2 - x1;
+    state.drawing.h = y2 - y1;
     redraw();
   }
 
   function commitBox() {
     const d = state.drawing;
     boxDragStart = null;
-    if (!d || d.type !== 'box' || d.w < 4 || d.h < 4) {
-      state.drawing = null; redraw(); return;
+    if (!d || d.type !== "box" || d.w < 4 || d.h < 4) {
+      state.drawing = null;
+      redraw();
+      return;
     }
     const ann = currentAnn();
     ann.boxes.push({
-      id: shortId('b'),
+      id: shortId("b"),
       classId: d.classId,
-      x: Math.round(d.x), y: Math.round(d.y),
-      w: Math.round(d.w), h: Math.round(d.h),
+      x: Math.round(d.x),
+      y: Math.round(d.y),
+      w: Math.round(d.w),
+      h: Math.round(d.h),
     });
-    if (ann.status === 'unlabeled') ann.status = 'in-progress';
+    if (ann.status === "unlabeled") ann.status = "in-progress";
     state.allImages[state.currentIndex].status = ann.status;
     state.drawing = null;
     markDirty();
-    renderSidebar(); renderNav(); redraw();
-    setDrawStatus('Box saved. Drag to start a new one.');
+    renderSidebar();
+    renderNav();
+    redraw();
+    setDrawStatus("Box saved. Drag to start a new one.");
   }
 
   // ── Render: full canvas redraw ─────────────────────────────────────────────
@@ -934,67 +1263,99 @@
     if (!stage) return;
     annLayer.destroyChildren();
     drawLayer.destroyChildren();
-    if (state.currentIndex < 0) { stage.batchDraw(); return; }
+    if (state.currentIndex < 0) {
+      stage.batchDraw();
+      return;
+    }
     const ann = currentAnn();
-    if (!ann) { stage.batchDraw(); return; }
+    if (!ann) {
+      stage.batchDraw();
+      return;
+    }
 
     // Committed segments
     (ann.segments || []).forEach((seg, i) => {
-      ensureRegionId(seg, 's');
+      ensureRegionId(seg, "s");
       if (state.layerVisibility[seg.id] === false) return;
       const col = classColor(seg.classId);
       const flat = [];
-      seg.points.forEach(p => { flat.push(p.x, p.y); });
-      const isSelected = state.selection && state.selection.type === 'segment' && state.selection.idx === i;
-      const dimmed = state.classFilter !== null && seg.classId !== state.classFilter;
+      seg.points.forEach((p) => {
+        flat.push(p.x, p.y);
+      });
+      const isSelected =
+        state.selection &&
+        state.selection.type === "segment" &&
+        state.selection.idx === i;
+      const dimmed =
+        state.classFilter !== null && seg.classId !== state.classFilter;
       // Fill alpha: 0x40 (~0.25) normal, 0x66 (~0.4) when selected, 0x18 dimmed.
-      const fillAlpha = dimmed ? '18' : (isSelected ? '66' : '40');
+      const fillAlpha = dimmed ? "18" : isSelected ? "66" : "40";
       const line = new Konva.Line({
-        points: flat, closed: true, stroke: col,
+        points: flat,
+        closed: true,
+        stroke: col,
         strokeWidth: isSelected ? 3 : 2,
         opacity: dimmed ? 0.5 : 1,
         fill: col + fillAlpha,
-        name: 'segment', listening: true,
+        name: "segment",
+        listening: true,
       });
-      line.on('click', () => {
-        if (state.mode !== 'select') return;
-        state.selection = { type: 'segment', idx: i };
-        renderSidebar(); redraw();
+      line.on("click", () => {
+        if (state.mode !== "select") return;
+        state.selection = { type: "segment", idx: i };
+        renderSidebar();
+        redraw();
       });
-      line.on('dblclick', e => {
+      line.on("dblclick", (e) => {
         e.evt.preventDefault();
-        openAnnotationPopup('segment', i, e.evt.clientX, e.evt.clientY);
+        openAnnotationPopup("segment", i, e.evt.clientX, e.evt.clientY);
       });
-      line.on('contextmenu', e => {
+      line.on("contextmenu", (e) => {
         e.evt.preventDefault();
-        openAnnotationPopup('segment', i, e.evt.clientX, e.evt.clientY);
+        openAnnotationPopup("segment", i, e.evt.clientX, e.evt.clientY);
       });
       annLayer.add(line);
-      if (isSelected && state.mode === 'select') {
+      if (isSelected && state.mode === "select") {
         seg.points.forEach((pt, vi) => {
           // 8x8 white square handle, centered on the vertex.
           // Drag to move · right-click to delete (min 3 points kept).
           const handle = new Konva.Rect({
-            x: pt.x - 4, y: pt.y - 4, width: 8, height: 8,
-            fill: '#fff', stroke: '#222', strokeWidth: 1,
+            x: pt.x - 4,
+            y: pt.y - 4,
+            width: 8,
+            height: 8,
+            fill: "#fff",
+            stroke: "#222",
+            strokeWidth: 1,
             draggable: true,
           });
-          handle.on('mouseenter', () => { document.body.style.cursor = seg.points.length > 3 ? 'context-menu' : 'default'; });
-          handle.on('mouseleave', () => { document.body.style.cursor = 'default'; });
-          handle.on('dragmove', () => {
-            seg.points[vi] = { x: Math.round(handle.x() + 4), y: Math.round(handle.y() + 4) };
-            line.points([].concat(...seg.points.map(p => [p.x, p.y])));
+          handle.on("mouseenter", () => {
+            document.body.style.cursor =
+              seg.points.length > 3 ? "context-menu" : "default";
+          });
+          handle.on("mouseleave", () => {
+            document.body.style.cursor = "default";
+          });
+          handle.on("dragmove", () => {
+            seg.points[vi] = {
+              x: Math.round(handle.x() + 4),
+              y: Math.round(handle.y() + 4),
+            };
+            line.points([].concat(...seg.points.map((p) => [p.x, p.y])));
             markDirty();
           });
-          handle.on('dragend', () => { renderSidebar(); });
-          handle.on('mousedown', e => {
-            if (e.evt.button !== 2) return;      // right-click only
-            e.cancelBubble = true;               // don't bubble to stage
+          handle.on("dragend", () => {
+            renderSidebar();
+          });
+          handle.on("mousedown", (e) => {
+            if (e.evt.button !== 2) return; // right-click only
+            e.cancelBubble = true; // don't bubble to stage
             e.evt.preventDefault();
-            if (seg.points.length <= 3) return;  // polygon needs at least 3 points
+            if (seg.points.length <= 3) return; // polygon needs at least 3 points
             seg.points.splice(vi, 1);
             markDirty();
-            renderSidebar(); redraw();
+            renderSidebar();
+            redraw();
           });
           annLayer.add(handle);
         });
@@ -1003,94 +1364,154 @@
 
     // Committed boxes
     (ann.boxes || []).forEach((box, i) => {
-      ensureRegionId(box, 'b');
+      ensureRegionId(box, "b");
       if (state.layerVisibility[box.id] === false) return;
       const col = classColor(box.classId);
-      const isSelected = state.selection && state.selection.type === 'box' && state.selection.idx === i;
-      const dimmed = state.classFilter !== null && box.classId !== state.classFilter;
-      const fillAlpha = dimmed ? '18' : (isSelected ? '4d' : '33');
+      const isSelected =
+        state.selection &&
+        state.selection.type === "box" &&
+        state.selection.idx === i;
+      const dimmed =
+        state.classFilter !== null && box.classId !== state.classFilter;
+      const fillAlpha = dimmed ? "18" : isSelected ? "4d" : "33";
       const rect = new Konva.Rect({
-        x: box.x, y: box.y, width: box.w, height: box.h,
-        stroke: col, strokeWidth: isSelected ? 3 : 2,
+        x: box.x,
+        y: box.y,
+        width: box.w,
+        height: box.h,
+        stroke: col,
+        strokeWidth: isSelected ? 3 : 2,
         opacity: dimmed ? 0.5 : 1,
         fill: col + fillAlpha,
-        name: 'box', listening: true,
-        draggable: state.mode === 'select' && isSelected,
+        name: "box",
+        listening: true,
+        draggable: state.mode === "select" && isSelected,
       });
-      rect.on('click', () => {
-        if (state.mode !== 'select') return;
-        state.selection = { type: 'box', idx: i };
-        renderSidebar(); redraw();
+      rect.on("click", () => {
+        if (state.mode !== "select") return;
+        state.selection = { type: "box", idx: i };
+        renderSidebar();
+        redraw();
       });
-      rect.on('dblclick', e => {
+      rect.on("dblclick", (e) => {
         e.evt.preventDefault();
-        openAnnotationPopup('box', i, e.evt.clientX, e.evt.clientY);
+        openAnnotationPopup("box", i, e.evt.clientX, e.evt.clientY);
       });
-      rect.on('contextmenu', e => {
+      rect.on("contextmenu", (e) => {
         e.evt.preventDefault();
-        openAnnotationPopup('box', i, e.evt.clientX, e.evt.clientY);
+        openAnnotationPopup("box", i, e.evt.clientX, e.evt.clientY);
       });
-      rect.on('dragend', () => {
-        box.x = Math.round(rect.x()); box.y = Math.round(rect.y());
+      rect.on("dragend", () => {
+        box.x = Math.round(rect.x());
+        box.y = Math.round(rect.y());
         markDirty();
       });
       annLayer.add(rect);
-      if (isSelected && state.mode === 'select') {
+      if (isSelected && state.mode === "select") {
         const tr = new Konva.Transformer({
-          nodes: [rect], rotateEnabled: false, anchorSize: 8,
-          enabledAnchors: ['top-left', 'top-right', 'bottom-left', 'bottom-right', 'middle-left', 'middle-right', 'top-center', 'bottom-center'],
-          boundBoxFunc: (oldB, newB) => newB.width < 5 || newB.height < 5 ? oldB : newB,
+          nodes: [rect],
+          rotateEnabled: false,
+          anchorSize: 8,
+          enabledAnchors: [
+            "top-left",
+            "top-right",
+            "bottom-left",
+            "bottom-right",
+            "middle-left",
+            "middle-right",
+            "top-center",
+            "bottom-center",
+          ],
+          boundBoxFunc: (oldB, newB) =>
+            newB.width < 5 || newB.height < 5 ? oldB : newB,
         });
         annLayer.add(tr);
-        rect.on('transformend', () => {
+        rect.on("transformend", () => {
           const w = rect.width() * rect.scaleX();
           const h = rect.height() * rect.scaleY();
-          rect.width(Math.round(w)); rect.height(Math.round(h));
-          rect.scaleX(1); rect.scaleY(1);
-          box.x = Math.round(rect.x()); box.y = Math.round(rect.y());
-          box.w = Math.round(rect.width()); box.h = Math.round(rect.height());
-          markDirty(); renderSidebar(); redraw();
+          rect.width(Math.round(w));
+          rect.height(Math.round(h));
+          rect.scaleX(1);
+          rect.scaleY(1);
+          box.x = Math.round(rect.x());
+          box.y = Math.round(rect.y());
+          box.w = Math.round(rect.width());
+          box.h = Math.round(rect.height());
+          markDirty();
+          renderSidebar();
+          redraw();
         });
       }
     });
 
     // In-progress polygon
-    if (state.drawing && state.drawing.type === 'polygon') {
+    if (state.drawing && state.drawing.type === "polygon") {
       const d = state.drawing;
       const col = classColor(d.classId);
       if (d.points.length > 1) {
         const flat = [];
-        d.points.forEach(p => flat.push(p.x, p.y));
-        drawLayer.add(new Konva.Line({ points: flat, stroke: col, strokeWidth: 2 }));
+        d.points.forEach((p) => flat.push(p.x, p.y));
+        drawLayer.add(
+          new Konva.Line({ points: flat, stroke: col, strokeWidth: 2 }),
+        );
       }
       d.points.forEach((p, i) => {
-        drawLayer.add(new Konva.Circle({
-          x: p.x, y: p.y, radius: i === 0 ? 5 : 4, fill: col,
-          stroke: col, strokeWidth: 1.5,
-        }));
+        drawLayer.add(
+          new Konva.Circle({
+            x: p.x,
+            y: p.y,
+            radius: i === 0 ? 5 : 4,
+            fill: col,
+            stroke: col,
+            strokeWidth: 1.5,
+          }),
+        );
       });
     }
 
     // In-progress box
-    if (state.drawing && state.drawing.type === 'box' && state.drawing.w > 0 && state.drawing.h > 0) {
+    if (
+      state.drawing &&
+      state.drawing.type === "box" &&
+      state.drawing.w > 0 &&
+      state.drawing.h > 0
+    ) {
       const col = classColor(state.drawing.classId);
-      drawLayer.add(new Konva.Rect({
-        x: state.drawing.x, y: state.drawing.y, width: state.drawing.w, height: state.drawing.h,
-        stroke: col, strokeWidth: 2, fill: col + '33', dash: [6, 4],
-      }));
+      drawLayer.add(
+        new Konva.Rect({
+          x: state.drawing.x,
+          y: state.drawing.y,
+          width: state.drawing.w,
+          height: state.drawing.h,
+          stroke: col,
+          strokeWidth: 2,
+          fill: col + "33",
+          dash: [6, 4],
+        }),
+      );
     }
 
     // Smart Select preview (green dashed) — one per returned polygon
-    if (state.mode === 'smart' && state.smart.preview.length) {
-      state.smart.preview.forEach(poly => {
+    if (state.mode === "smart" && state.smart.preview.length) {
+      state.smart.preview.forEach((poly) => {
         if (poly.points.length < 2) return;
         const flat = [];
-        poly.points.forEach(p => flat.push(p.x, p.y));
-        drawLayer.add(new Konva.Line({
-          points: flat, closed: true, stroke: '#06D6A0', strokeWidth: 2,
-          fill: '#06D6A04d', dash: [6, 4],
-        }));
-        poly.points.forEach(p => drawLayer.add(new Konva.Circle({ x: p.x, y: p.y, radius: 3, fill: '#06D6A0' })));
+        poly.points.forEach((p) => flat.push(p.x, p.y));
+        drawLayer.add(
+          new Konva.Line({
+            points: flat,
+            closed: true,
+            stroke: "#06D6A0",
+            strokeWidth: 2,
+            fill: "#06D6A04d",
+            dash: [6, 4],
+          }),
+        );
+        poly.points.forEach((p) =>
+          drawLayer.add(
+            new Konva.Circle({ x: p.x, y: p.y, radius: 3, fill: "#06D6A0" }),
+          ),
+        );
       });
     }
 
@@ -1102,14 +1523,19 @@
     if (state.currentIndex !== -1 && state.currentIndex !== index) {
       saveAnnotations(true);
     }
-    state.drawing = null; state.selection = null; boxDragStart = null;
+    state.drawing = null;
+    state.selection = null;
+    boxDragStart = null;
     state.classFilter = null;
     closeAnnotationPopup();
     state.currentIndex = index;
     renderNav();
     renderSidebar();
     loadImageInto(state.allImages[index].file);
-    if (state.mode === 'smart') { smartClear(); smartDetect(); }
+    if (state.mode === "smart") {
+      smartClear();
+      smartDetect();
+    }
   }
 
   function navigateImage(delta) {
@@ -1120,21 +1546,30 @@
   async function markCurrentDone() {
     if (state.currentIndex < 0) return;
     const ann = currentAnn();
-    ann.status = 'done';
-    state.allImages[state.currentIndex].status = 'done';
+    ann.status = "done";
+    state.allImages[state.currentIndex].status = "done";
     markDirty();
     renderNav();
     await saveAnnotations(false);
   }
 
+  async function saveAndContinue() {
+    if (state.currentIndex < 0) return;
+    await markCurrentDone();
+    navigateImage(1);
+  }
+
   function deleteSelected() {
     if (!state.selection) return;
     const ann = currentAnn();
-    if (state.selection.type === 'segment') ann.segments.splice(state.selection.idx, 1);
-    if (state.selection.type === 'box') ann.boxes.splice(state.selection.idx, 1);
+    if (state.selection.type === "segment")
+      ann.segments.splice(state.selection.idx, 1);
+    if (state.selection.type === "box")
+      ann.boxes.splice(state.selection.idx, 1);
     state.selection = null;
     markDirty();
-    renderSidebar(); redraw();
+    renderSidebar();
+    redraw();
   }
 
   function setMode(m) {
@@ -1142,27 +1577,32 @@
     state.drawing = null;
     state.selection = null;
     boxDragStart = null;
-    [el.modePolygon, el.modeBox, el.modeSmart, el.modeSelect].forEach(b => b.classList.remove('active'));
-    if (m === 'polygon') el.modePolygon.classList.add('active');
-    if (m === 'box') el.modeBox.classList.add('active');
-    if (m === 'smart') el.modeSmart.classList.add('active');
-    if (m === 'select') el.modeSelect.classList.add('active');
+    [el.modePolygon, el.modeBox, el.modeSmart, el.modeSelect].forEach((b) =>
+      b.classList.remove("active"),
+    );
+    if (m === "polygon") el.modePolygon.classList.add("active");
+    if (m === "box") el.modeBox.classList.add("active");
+    if (m === "smart") el.modeSmart.classList.add("active");
+    if (m === "select") el.modeSelect.classList.add("active");
 
-    if (m === 'smart') {
+    if (m === "smart") {
       positionSmartPanel();
-      el.smartPanel.style.display = 'block';
+      el.smartPanel.style.display = "block";
       smartClear();
       smartDetect();
     } else {
-      el.smartPanel.style.display = 'none';
+      el.smartPanel.style.display = "none";
       if (state.smart.preview.length) smartClear();
     }
 
     setDrawStatus(
-      m === 'polygon' ? 'Polygon mode · Click to add vertices · Double-click to close · Esc to cancel' :
-      m === 'box' ? 'Box mode · Drag to draw a rectangle · Esc to cancel' :
-      m === 'smart' ? 'Smart mode · Click an object · Enter to keep · Esc to exit' :
-      'Select mode · Click an annotation to edit · Delete to remove'
+      m === "polygon"
+        ? "Polygon mode · Click to add vertices · Double-click to close · Esc to cancel"
+        : m === "box"
+          ? "Box mode · Drag to draw a rectangle · Esc to cancel"
+          : m === "smart"
+            ? "Smart mode · Click an object · Enter to keep · Esc to exit"
+            : "Select mode · Click an annotation to edit · Delete to remove · Right click to delete a single point",
     );
     redraw();
   }
@@ -1172,47 +1612,60 @@
     closeAnnotationPopup();
     const ann = currentAnn();
     if (!ann) return;
-    const region = kind === 'segment' ? ann.segments[idx] : ann.boxes[idx];
+    const region = kind === "segment" ? ann.segments[idx] : ann.boxes[idx];
     if (!region) return;
-    const cls = state.classes.find(c => c.id === region.classId) || { name: '' };
+    const cls = state.classes.find((c) => c.id === region.classId) || {
+      name: "",
+    };
 
-    const wrap = document.createElement('div');
-    wrap.className = 'popup';
+    const wrap = document.createElement("div");
+    wrap.className = "popup";
     wrap.tabIndex = -1;
-    wrap.style.left = Math.min(window.innerWidth - 300, Math.max(8, screenX + 8)) + 'px';
-    wrap.style.top = Math.min(window.innerHeight - 360, Math.max(8, screenY + 8)) + 'px';
+    wrap.style.left =
+      Math.min(window.innerWidth - 300, Math.max(8, screenX + 8)) + "px";
+    wrap.style.top =
+      Math.min(window.innerHeight - 360, Math.max(8, screenY + 8)) + "px";
     wrap.innerHTML =
       '<h3>Annotation Editor <button class="pop-x" id="popX" type="button">×</button></h3>' +
-      '<input type="text" id="popName" value="' + escapeHTML(cls.name) + '" />' +
+      '<input type="text" id="popName" value="' +
+      escapeHTML(cls.name) +
+      '" />' +
       '<div class="pop-actions">' +
       '<button class="btn btn-warn" id="popDelete" type="button">Delete</button>' +
       '<button class="btn btn-cyan" id="popSave" type="button">Save (Enter)</button>' +
-      '</div>' +
+      "</div>" +
       '<div class="pop-class-list" id="popClassList"></div>';
     el.popupRoot.appendChild(wrap);
 
-    const list = wrap.querySelector('#popClassList');
+    const list = wrap.querySelector("#popClassList");
     state.classes.forEach((c, i) => {
-      const r = document.createElement('div');
-      r.className = 'pop-class-row';
+      const r = document.createElement("div");
+      r.className = "pop-class-row";
       r.innerHTML =
-        '<span class="pop-class-num">' + (i + 1) + '.</span>' +
-        '<span class="class-dot" style="background:' + (c.color || classColor(c.id)) + '"></span>' +
+        '<span class="pop-class-num">' +
+        (i + 1) +
+        ".</span>" +
+        '<span class="class-dot" style="background:' +
+        (c.color || classColor(c.id)) +
+        '"></span>' +
         escapeHTML(c.name);
-      r.addEventListener('click', () => {
+      r.addEventListener("click", () => {
         region.classId = c.id;
         markDirty();
         closeAnnotationPopup();
-        renderSidebar(); redraw();
+        renderSidebar();
+        redraw();
       });
       list.appendChild(r);
     });
 
-    function close() { closeAnnotationPopup(); }
+    function close() {
+      closeAnnotationPopup();
+    }
     function save() {
-      const name = wrap.querySelector('#popName').value.trim();
+      const name = wrap.querySelector("#popName").value.trim();
       if (name && name !== cls.name) {
-        let target = state.classes.find(c => c.name === name);
+        let target = state.classes.find((c) => c.name === name);
         if (!target) {
           target = { id: nextClassId(), name, color: nextClassColor() };
           state.classes.push(target);
@@ -1221,76 +1674,86 @@
         markDirty();
       }
       close();
-      renderClassList(); renderSidebar(); redraw();
+      renderClassList();
+      renderSidebar();
+      redraw();
     }
     function deleteRegion() {
       const a = currentAnn();
-      if (kind === 'segment') a.segments.splice(idx, 1);
-      if (kind === 'box') a.boxes.splice(idx, 1);
+      if (kind === "segment") a.segments.splice(idx, 1);
+      if (kind === "box") a.boxes.splice(idx, 1);
       state.selection = null;
       markDirty();
       close();
-      renderSidebar(); redraw();
+      renderSidebar();
+      redraw();
     }
 
-    wrap.querySelector('#popX').addEventListener('click', close);
-    wrap.querySelector('#popDelete').addEventListener('click', deleteRegion);
-    wrap.querySelector('#popSave').addEventListener('click', save);
-    wrap.addEventListener('keydown', e => {
-      if (e.key === 'Enter') { e.preventDefault(); save(); }
-      if (e.key === 'Escape') { e.preventDefault(); close(); }
-      if (/^[1-9]$/.test(e.key) && e.target.id !== 'popName') {
+    wrap.querySelector("#popX").addEventListener("click", close);
+    wrap.querySelector("#popDelete").addEventListener("click", deleteRegion);
+    wrap.querySelector("#popSave").addEventListener("click", save);
+    wrap.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        save();
+      }
+      if (e.key === "Escape") {
+        e.preventDefault();
+        close();
+      }
+      if (/^[1-9]$/.test(e.key) && e.target.id !== "popName") {
         const i = parseInt(e.key, 10) - 1;
         if (state.classes[i]) {
           region.classId = state.classes[i].id;
           markDirty();
           close();
-          renderSidebar(); redraw();
+          renderSidebar();
+          redraw();
         }
       }
     });
-    wrap.querySelector('#popName').focus();
+    wrap.querySelector("#popName").focus();
     state.popup = { close };
   }
 
   function closeAnnotationPopup() {
-    el.popupRoot.innerHTML = '';
+    el.popupRoot.innerHTML = "";
     state.popup = null;
   }
 
   // ── Stage events ───────────────────────────────────────────────────────────
   function bindStageEvents() {
     // Block the browser's right-click menu over the canvas.
-    el.stageDiv.addEventListener('contextmenu', e => e.preventDefault());
-    stage.on('mousedown touchstart', () => {
+    el.stageDiv.addEventListener("contextmenu", (e) => e.preventDefault());
+    stage.on("mousedown touchstart", () => {
       if (state.currentIndex < 0) return;
-      if (state.mode !== 'box') return;
+      if (state.mode !== "box") return;
       const p = imageCoordsFromEvent();
       if (!p) return;
       startBoxAt(p);
     });
 
-    stage.on('mousemove touchmove', () => {
+    stage.on("mousemove touchmove", () => {
       updateCrosshair();
-      if (state.mode !== 'box' || !boxDragStart) return;
+      if (state.mode !== "box" || !boxDragStart) return;
       const p = imageCoordsFromEvent();
       if (!p) return;
       updateBoxDrag(p);
     });
 
-    stage.on('mouseleave', hideCrosshair);
-    stage.on('mouseenter', updateCrosshair);
+    stage.on("mouseleave", hideCrosshair);
+    stage.on("mouseenter", updateCrosshair);
 
-    stage.on('mouseup touchend', () => {
-      if (state.mode !== 'box') return;
+    stage.on("mouseup touchend", () => {
+      if (state.mode !== "box") return;
       if (boxDragStart) commitBox();
     });
 
-    stage.on('click', (evt) => {
+    stage.on("click", (evt) => {
       if (state.currentIndex < 0) return;
       const p = imageCoordsFromEvent();
       if (!p) return;
-      if (state.mode === 'polygon') {
+      if (state.mode === "polygon") {
         if (!state.drawing) {
           startPolygonAt(p);
           return;
@@ -1299,15 +1762,17 @@
         const first = state.drawing.points[0];
         const pos = stage.getPointerPosition();
         const firstScreen = imgLayer.getAbsoluteTransform().point(first);
-        if (state.drawing.points.length >= 3 &&
-          distance(pos.x, pos.y, firstScreen.x, firstScreen.y) < 10) {
+        if (
+          state.drawing.points.length >= 3 &&
+          distance(pos.x, pos.y, firstScreen.x, firstScreen.y) < 10
+        ) {
           commitPolygon();
           return;
         }
         addPolygonVertex(p);
         return;
       }
-      if (state.mode === 'select') {
+      if (state.mode === "select") {
         // Clicking empty stage deselects (clicks on shapes are handled by the shape's own click handler).
         if (evt && evt.target === stage && state.selection) {
           state.selection = null;
@@ -1317,8 +1782,8 @@
       }
     });
 
-    stage.on('dblclick', () => {
-      if (state.mode !== 'polygon' || !state.drawing) return;
+    stage.on("dblclick", () => {
+      if (state.mode !== "polygon" || !state.drawing) return;
       // The browser fired click → click → dblclick — pop the duplicate.
       if (state.drawing.points.length > 3) state.drawing.points.pop();
       commitPolygon();
@@ -1326,22 +1791,26 @@
   }
 
   // ── Keyboard ──────────────────────────────────────────────────────────────
-  window.addEventListener('keydown', e => {
+  window.addEventListener("keydown", (e) => {
     // Don't intercept shortcuts while typing in inputs (modals).
-    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+    if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA") return;
 
-    if (e.key === 'Escape') {
-      if (state.mode === 'smart') {
+    if (e.key === "Escape") {
+      if (state.mode === "smart") {
         if (state.smart.preview.length) smartClear();
-        else setMode('select');
+        else setMode("select");
         return;
       }
       if (state.drawing) cancelDrawing();
-      else if (state.selection) { state.selection = null; renderSidebar(); redraw(); }
+      else if (state.selection) {
+        state.selection = null;
+        renderSidebar();
+        redraw();
+      }
       return;
     }
-    if (e.key === 'Backspace') {
-      if (state.drawing && state.drawing.type === 'polygon') {
+    if (e.key === "Backspace") {
+      if (state.drawing && state.drawing.type === "polygon") {
         e.preventDefault();
         if (state.drawing.points.length > 1) {
           state.drawing.points.pop();
@@ -1351,114 +1820,161 @@
         }
         return;
       }
-      if (state.mode === 'select' && state.selection) {
+      if (state.mode === "select" && state.selection) {
         e.preventDefault();
         deleteSelected();
         return;
       }
     }
-    if (e.key === 'Delete' && state.selection) { deleteSelected(); return; }
-    if (e.key === 'Enter' && state.mode === 'smart') { smartFinish(); return; }
-    if (e.key === 'Enter' && state.drawing) {
-      if (state.drawing.type === 'polygon') commitPolygon();
+    if (e.key === "Delete" && state.selection) {
+      deleteSelected();
       return;
     }
-    if (e.key === 'ArrowLeft') { e.preventDefault(); navigateImage(-1); return; }
-    if (e.key === 'ArrowRight') { e.preventDefault(); navigateImage(1); return; }
-    if (e.key === 'd' || e.key === 'D') { markCurrentDone(); return; }
-    if (e.key === 'p' || e.key === 'P') { setMode('polygon'); return; }
-    if (e.key === 'b' || e.key === 'B') { setMode('box'); return; }
-    if (e.key === 'v' || e.key === 'V') { setMode('select'); return; }
-    if ((e.key === 's' || e.key === 'S') && !e.ctrlKey && !e.metaKey) { setMode('smart'); return; }
+    if (e.key === "Enter" && state.mode === "smart") {
+      smartFinish();
+      return;
+    }
+    if (e.key === "Enter" && state.drawing) {
+      if (state.drawing.type === "polygon") commitPolygon();
+      return;
+    }
+    if (e.key === "ArrowLeft") {
+      e.preventDefault();
+      navigateImage(-1);
+      return;
+    }
+    if (e.key === "ArrowRight") {
+      e.preventDefault();
+      navigateImage(1);
+      return;
+    }
+    if (e.key === "d" || e.key === "D") {
+      markCurrentDone();
+      return;
+    }
+    if (e.key === "p" || e.key === "P") {
+      setMode("polygon");
+      return;
+    }
+    if (e.key === "b" || e.key === "B") {
+      setMode("box");
+      return;
+    }
+    if (e.key === "v" || e.key === "V") {
+      setMode("select");
+      return;
+    }
+    if ((e.key === "s" || e.key === "S") && !e.ctrlKey && !e.metaKey) {
+      setMode("smart");
+      return;
+    }
     if (/^[1-9]$/.test(e.key)) {
       const idx = parseInt(e.key, 10) - 1;
-      if (state.classes[idx]) { state.selectedClass = state.classes[idx].id; renderClassList(); }
+      if (state.classes[idx]) {
+        state.selectedClass = state.classes[idx].id;
+        renderClassList();
+      }
     }
-    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "s") {
       e.preventDefault();
       saveAnnotations(false);
     }
   });
 
   // ── Button wiring ─────────────────────────────────────────────────────────
-  el.modePolygon.addEventListener('click', () => setMode('polygon'));
-  el.modeBox.addEventListener('click', () => setMode('box'));
-  el.modeSmart.addEventListener('click', () => setMode(state.mode === 'smart' ? 'select' : 'smart'));
-  el.modeSelect.addEventListener('click', () => setMode('select'));
+  el.modePolygon.addEventListener("click", () => setMode("polygon"));
+  el.modeBox.addEventListener("click", () => setMode("box"));
+  el.modeSmart.addEventListener("click", () =>
+    setMode(state.mode === "smart" ? "select" : "smart"),
+  );
+  el.modeSelect.addEventListener("click", () => setMode("select"));
 
   // Close the Smart popup when clicking anywhere outside it (but not on the
   // Smart button, which toggles it itself).
-  document.addEventListener('mousedown', (e) => {
-    if (state.mode !== 'smart') return;
-    if (el.smartPanel.contains(e.target) || el.modeSmart.contains(e.target)) return;
-    setMode('select');
+  document.addEventListener("mousedown", (e) => {
+    if (state.mode !== "smart") return;
+    if (el.smartPanel.contains(e.target) || el.modeSmart.contains(e.target))
+      return;
+    setMode("select");
   });
 
   // Smart Select panel
-  el.smartClose.addEventListener('click', () => setMode('select'));
-  el.smartDetect.addEventListener('click', smartDetect);
-  el.smartDelete.addEventListener('click', smartClear);
-  el.smartFinish.addEventListener('click', smartFinish);
-  el.smartModel.addEventListener('change', () => {
+  el.smartClose.addEventListener("click", () => setMode("select"));
+  el.smartDetect.addEventListener("click", smartDetect);
+  el.smartDelete.addEventListener("click", smartClear);
+  el.smartFinish.addEventListener("click", smartFinish);
+  el.smartModel.addEventListener("change", () => {
     state.smart.model = el.smartModel.value;
     smartClear();
-    if (state.mode === 'smart') smartDetect();
+    if (state.mode === "smart") smartDetect();
   });
-  el.smartSimplify.addEventListener('input', () => {
+  el.smartSimplify.addEventListener("input", () => {
     if (state.smart.raw.length) applySimplify();
   });
-  el.exportBtn.addEventListener('click', () => {
-    window.location.href = 'annotate.php?action=export_dataset&model=' + encodeURIComponent(MODEL);
+  el.exportBtn.addEventListener("click", () => {
+    window.location.href =
+      "annotate.php?action=export_dataset&model=" + encodeURIComponent(MODEL);
   });
-  el.deleteModelBtn.addEventListener('click', async () => {
+  el.deleteModelBtn.addEventListener("click", async () => {
     const count = state.allImages.length;
-    const msg = 'Delete model "' + MODEL + '"?\n\n'
-      + 'This will permanently delete ' + count + ' image(s) and all annotations.\n'
-      + 'This cannot be undone.';
+    const msg =
+      'Delete model "' +
+      MODEL +
+      '"?\n\n' +
+      "This will permanently delete " +
+      count +
+      " image(s) and all annotations.\n" +
+      "This cannot be undone.";
     if (!confirm(msg)) return;
     try {
       el.deleteModelBtn.disabled = true;
-      el.deleteModelBtn.textContent = 'Deleting…';
-      await api('POST', 'annotate.php?action=delete_model&model=' + encodeURIComponent(MODEL), {});
-      window.location.href = 'annotate.php';
+      el.deleteModelBtn.textContent = "Deleting…";
+      await api(
+        "POST",
+        "annotate.php?action=delete_model&model=" + encodeURIComponent(MODEL),
+        {},
+      );
+      window.location.href = "annotate.php";
     } catch (e) {
       el.deleteModelBtn.disabled = false;
-      el.deleteModelBtn.textContent = '🗑 Delete Model';
-      setSaveStatus('Delete failed: ' + e.message, 'warn');
+      el.deleteModelBtn.textContent = "🗑 Delete Model";
+      setSaveStatus("Delete failed: " + e.message, "warn");
     }
   });
-  el.saveBtn.addEventListener('click', () => saveAnnotations(false));
-  el.prevBtn.addEventListener('click', () => navigateImage(-1));
-  el.nextBtn.addEventListener('click', () => navigateImage(1));
-  el.markDoneBtn.addEventListener('click', markCurrentDone);
-  el.classAddBtn.addEventListener('click', () => openClassModal(null));
-  el.reviewedBtn.addEventListener('click', toggleReviewed);
+  el.saveBtn.addEventListener("click", () => saveAnnotations(false));
+  el.saveContinueBtn.addEventListener("click", saveAndContinue);
+  el.prevBtn.addEventListener("click", () => navigateImage(-1));
+  el.nextBtn.addEventListener("click", () => navigateImage(1));
+  el.classAddBtn.addEventListener("click", () => openClassModal(null));
 
   // Tabs
-  el.tabs.forEach(btn => {
-    btn.addEventListener('click', () => {
+  el.tabs.forEach((btn) => {
+    btn.addEventListener("click", () => {
       state.tab = btn.dataset.tab;
-      el.tabs.forEach(b => b.classList.toggle('active', b === btn));
+      el.tabs.forEach((b) => b.classList.toggle("active", b === btn));
       renderSidebar();
     });
   });
 
   // Tags input — UI only.
-  el.tagsInput.addEventListener('keydown', e => {
-    if (e.key === 'Enter') {
+  el.tagsInput.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
       e.preventDefault();
       const tag = el.tagsInput.value.trim();
       if (tag) {
         state.tags.push(tag);
-        el.tagsInput.value = '';
+        el.tagsInput.value = "";
         renderTags();
       }
     }
   });
 
   // ── beforeunload guard ───────────────────────────────────────────────────
-  window.addEventListener('beforeunload', e => {
-    if (state.dirty) { e.preventDefault(); e.returnValue = ''; }
+  window.addEventListener("beforeunload", (e) => {
+    if (state.dirty) {
+      e.preventDefault();
+      e.returnValue = "";
+    }
   });
 
   // ── Init ──────────────────────────────────────────────────────────────────
@@ -1476,10 +1992,9 @@
       // Auto-select the first image so the canvas isn't blank on load.
       if (state.allImages.length > 0) selectImage(0);
     } catch (e) {
-      setSaveStatus('Load error: ' + e.message, 'warn');
+      setSaveStatus("Load error: " + e.message, "warn");
     }
   }
 
   init();
-
 })();

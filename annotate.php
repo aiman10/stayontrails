@@ -514,7 +514,7 @@ function renderAnnotator(string $model): void {
   <div class="nav-actions">
     <span id="saveStatus"></span>
     <button class="btn btn-cyan" id="saveBtn" type="button" disabled>Save</button>
-    <button class="check-btn" id="reviewedBtn" type="button" title="Mark reviewed" disabled>✓</button>
+    <button class="btn btn-done" id="saveContinueBtn" type="button" disabled>Save &amp; Continue</button>
   </div>
 </div>
 
@@ -559,7 +559,6 @@ function renderAnnotator(string $model): void {
     </div>
     <div class="canvas-bar">
       <span id="drawStatus">Polygon mode · Click to add vertices · Double-click to close · Esc to cancel</span>
-      <button class="btn btn-done" id="markDoneBtn" type="button" disabled>Mark Done</button>
     </div>
   </section>
 
